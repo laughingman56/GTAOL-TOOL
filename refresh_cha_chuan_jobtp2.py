@@ -122,7 +122,7 @@ def fetch_quellgtacode():
     """
     # 增加时间戳参数，强制每次请求都是全新的，防止被路由器/运营商/CDN缓存
     timestamp = int(time.time() * 1000)
-    url = f"https://www.u3524892.nyat.app:13986/?_t={timestamp}"
+    url = f"https://www.*********.nyat.app:13986/?_t={timestamp}"
 
     try:
         # 设置请求头，模拟浏览器访问
