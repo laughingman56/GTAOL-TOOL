@@ -157,7 +157,7 @@ def show_settings_ui(parent_window):
             # 调用外部获取链接的函数
             link, msg = get_latest_steam_link_from_log()
             if link:
-                cfg.update_config_item("target_cmd1", link)
+                cfg.update_config_item("target_cmd2", link)
                 log_msg(f"成功: {msg}")
             else:
                 log_msg(f"失败: {msg}")
@@ -165,7 +165,7 @@ def show_settings_ui(parent_window):
             log_msg("错误: 扫描函数未定义")
 
     def on_clear():
-        cfg.update_config_item("target_cmd1", "")
+        cfg.update_config_item("target_cmd2", "")
         log_msg("配置已清空")
 
     ctk.CTkButton(btn_box, text="读取按键", command=on_read, font=FONT_BOLD,fg_color="#2fa572").pack(side="left", expand=True, padx=5)
@@ -268,9 +268,9 @@ def get_cmd2():
     all_data = config.get_all_data()
 
     # 3. 提取 target_cmd1，使用 .get 防止报错（如果没找到返回空字符串）
-    cmd1 = all_data.get("target_cmd2", "")
+    cmd2 = all_data.get("target_cmd2", "")
 
-    return cmd1
+    return cmd2
 
 def get_style2():
     """
@@ -479,7 +479,7 @@ def run(sct=None):
                     print("超过时间，跳出循环")
                     break
                 auto_key_on_black_screen(sct)
-                time.sleep(0.2)
+                time.sleep(0.1)
 
 
     elif get_style2() == 0:

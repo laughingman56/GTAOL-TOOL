@@ -84,15 +84,17 @@ class AntiIdleManager(threading.Thread):
         """发送C键"""
         self._is_pressing_key = True
         try:
-            for _ in range(5):
-                self.force_scroll(1)
-                time.sleep(0.1)
+            for _ in range(2):
+                pydirectinput.keyDown("up")
+                time.sleep(1)
+                pydirectinput.keyUp("up")
+                time.sleep(1)
 
             pydirectinput.keyDown("c")
-            time.sleep(0.1)
+            time.sleep(1)
             pydirectinput.keyUp("c")
 
-            print(f"[{time.strftime('%H:%M:%S')}] 检测到挂机，已自动按下 上滚轮 和c键防休眠。")
+            print(f"[{time.strftime('%H:%M:%S')}] 检测到挂机，已自动按下 up 和c键防休眠。")
         except Exception as e:
             print(f"发送C键失败: {e}")
         finally:

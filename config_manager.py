@@ -87,8 +87,8 @@ class ConfigManager:
             "ka_cha_chuan": {"name": "任务卡差传", "key": "O","danei":True ,"enabled": True},
             #差传相关
             #"cha_chuan": {"name": "差传", "key": "NONE", "enabled": True},
-            "cha_chuan_1": {"name": "差传1", "key": "F7","cha_chuan_1_style": 1, "cha_chuan_1_time":40, "target_cmd1_style": 0,"manual":False,"enabled": True},
-            "cha_chuan_2": {"name": "差传2", "key": "F8","cha_chuan_2_style": 1, "cha_chuan_2_time":40, "target_cmd2_style": 1,"manual":False,"enabled": True},
+            "cha_chuan_1": {"name": "差传1", "key": "F7","cha_chuan_1_style": 1, "cha_chuan_1_time":40, "target_cmd1_bot": 0,"manual":False,"enabled": True},
+            "cha_chuan_2": {"name": "差传2", "key": "F8","cha_chuan_2_style": 1, "cha_chuan_2_time":40, "target_cmd2_bot": 1,"manual":False,"enabled": True},
             #"refresh_cha_chuan_1": {"name": "刷新差传1", "key": "F7+F7", "enabled": True},
             #"refresh_cha_chuan_2": {"name": "刷新差传2", "key": "F8+F8", "enabled": True},
             "refresh_cha_chuan_bot": {"name": "自动刷新差传", "key": "F6", "enabled": True},

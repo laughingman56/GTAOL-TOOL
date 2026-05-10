@@ -181,7 +181,7 @@ def show_settings_ui(parent_window):
 
 # 坐标定义
 
-m_ROI = (0, 600, 600, 100)
+m_ROI = (0, 580, 700, 200)
 
 
 def get_key(key):
@@ -237,7 +237,7 @@ def eat_pill(sct=None):
     quick_press(m_menu)
     time.sleep(0.3)  # 可根据实际情况调整
 
-    is_ceo = ka_ceo.judge(m_ROI,350,400,sct)
+    is_ceo = ka_ceo.judge(m_ROI,500,600,sct)
 
     if is_ceo:
         quick_press("enter")
@@ -527,7 +527,7 @@ def flight_thermal(sct=None):
     quick_press(m_menu)
     time.sleep(0.3)  # 可根据实际情况调整
 
-    is_ceo = ka_ceo.judge(m_ROI,350,400,sct)
+    is_ceo = ka_ceo.judge(m_ROI,500,600,sct)
 
     if not is_ceo:
 
@@ -591,7 +591,7 @@ def ghost(sct=None):
     quick_press(m_menu)
     time.sleep(0.3)  # 可根据实际情况调整
 
-    is_ceo = ka_ceo.judge(m_ROI,350,400,sct)
+    is_ceo = ka_ceo.judge(m_ROI,500,600,sct)
 
     if is_ceo:
         quick_press("enter")

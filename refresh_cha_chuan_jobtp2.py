@@ -27,11 +27,20 @@ def show_settings_ui(parent_window):
     # 2. 准备数据
     cfg = ConfigManager()
     data = cfg.get_all_data()
-    bot_options = ["1号bot--jobtp2", "2号bot--jobtp2", "3号bot--jobtp2", "4号bot--jobtp2"]  # 对应索引 0, 1, 2
+    bot_options = ["1号bot--郑州联通", "2号bot--郑州移动", "3号bot--自由瞄准", "4号bot--辅助瞄准"]  # 对应索引 0, 1, 2
+
+    # 新增：计算每个bot的状态（使用文本标记）
+    bot_options_with_status = []
+    for i in range(4):
+        link = data.get(f"link{i}", "")
+        if len(link) < 30:
+            bot_options_with_status.append(f"[失效] {bot_options[i]}")  # 失效标记
+        else:
+            bot_options_with_status.append(f"[正常] {bot_options[i]}")  # 正常标记
 
     # 获取当前配置索引 (防止越界)
-    idx1 = data.get("cha_chuan_1", {}).get("target_cmd1_style", 0)
-    idx2 = data.get("cha_chuan_2", {}).get("target_cmd2_style", 0)
+    idx1 = data.get("cha_chuan_1", {}).get("target_cmd1_bot", 0)
+    idx2 = data.get("cha_chuan_2", {}).get("target_cmd2_bot", 0)
     if not (0 <= idx1 <= 3): idx1 = 0
     if not (0 <= idx2 <= 3): idx2 = 0
 
@@ -40,8 +49,11 @@ def show_settings_ui(parent_window):
     def on_change_cmd1(choice):
         """当差传1下拉框变化时触发"""
         try:
-            new_idx = bot_options.index(choice)  # 获取文本对应的索引(0,1,2)
-            cfg.update_config_item("cha_chuan_1.target_cmd1_style", new_idx)  # 写入配置
+            # 去掉状态标记（前4个字符："[正常] "或"[失效] "）
+            clean_choice = choice[5:]  # "[正常] " 或 "[失效] " 都是5个字符
+            new_idx = bot_options.index(clean_choice)  # 获取文本对应的索引
+
+            cfg.update_config_item("cha_chuan_1.target_cmd1_bot", new_idx)  # 写入配置
             print(f"[设置] 差传1 已切换为: {choice} (ID:{new_idx})")
             cha_chuan_1()  # 立即刷新差传1链接
         except Exception as e:
@@ -50,8 +62,11 @@ def show_settings_ui(parent_window):
     def on_change_cmd2(choice):
         """当差传2下拉框变化时触发"""
         try:
-            new_idx = bot_options.index(choice)
-            cfg.update_config_item("cha_chuan_2.target_cmd2_style", new_idx)  # 写入配置
+            # 去掉状态标记（前4个字符："[正常] "或"[失效] "）
+            clean_choice = choice[5:]  # "[正常] " 或 "[失效] " 都是5个字符
+            new_idx = bot_options.index(clean_choice)  # 获取文本对应的索引
+
+            cfg.update_config_item("cha_chuan_2.target_cmd2_bot", new_idx)  # 写入配置
             print(f"[设置] 差传2 已切换为: {choice} (ID:{new_idx})")
             cha_chuan_2()  # 立即刷新差传2链接
         except Exception as e:
@@ -69,12 +84,12 @@ def show_settings_ui(parent_window):
         frame,
         font=("Microsoft YaHei", 18, "bold"),
         dropdown_font=("Microsoft YaHei", 18, "bold"),
-        values=bot_options,
+        values=bot_options_with_status,  # 使用带状态的选项
         state="readonly",
-        command=on_change_cmd1  # 绑定回调函数
+        command=on_change_cmd1
     )
     combo_1.pack(fill="x", pady=(0, 15))
-    combo_1.set(bot_options[idx1])  # 设置初始值
+    combo_1.set(bot_options_with_status[idx1])  # 设置初始值
 
     # --- 差传 2 ---
     ctk.CTkLabel(frame, text="差传2:",
@@ -84,21 +99,22 @@ def show_settings_ui(parent_window):
         frame,
         font=("Microsoft YaHei", 18, "bold"),
         dropdown_font=("Microsoft YaHei", 18, "bold"),
-        values=bot_options,
+        values=bot_options_with_status,  # 使用带状态的选项
         state="readonly",
-        command=on_change_cmd2  # 绑定回调函数
+        command=on_change_cmd2
     )
     combo_2.pack(fill="x", pady=(0, 10))
-    combo_2.set(bot_options[idx2])  # 设置初始值
-
+    combo_2.set(bot_options_with_status[idx2])  # 设置初始值
 
     ctk.CTkLabel(frame,
-                 text="-jobtp2的QQ:189311215\n"
-                      #"-ksyyds的QQ:736867759\n"
-                      "-开启软件后更新一次差传，\n"
-                      "-之后每5分钟更新一次\n"
-                      "-如果差传用不了，\n"
-                      "-可以更换bot或者F6手动刷新",
+                 text=
+                    "-steam公益群组：JobTP2\n"
+                    "-JobTP2的QQ:189311215\n"
+                    #"-ksyyds的QQ:736867759\n"
+                    "-开启软件后更新一次差传，\n"
+                    "-之后每5分钟更新一次\n"
+                    "-如果差传用不了，\n"
+                    "-可以更换bot或者F6手动刷新",
                  font=("Microsoft YaHei", 18, "bold"),
                  justify="left",
                  padx=0).pack(anchor="w", padx=0)
@@ -122,7 +138,7 @@ def fetch_quellgtacode():
     """
     # 增加时间戳参数，强制每次请求都是全新的，防止被路由器/运营商/CDN缓存
     timestamp = int(time.time() * 1000)
-    url = f"https://www.u3524892.nyat.app:13986/?_t={timestamp}"
+    url = f"https://www.u3524892.nyat.app:35506/?_t={timestamp}"
 
     try:
         # 设置请求头，模拟浏览器访问
@@ -153,6 +169,50 @@ def fetch_quellgtacode():
         return None
 
 
+def auto_change_bot():
+    cfg = ConfigManager()
+    data = cfg.get_all_data()
+
+    bot_names = ["1号bot--郑州联通", "2号bot--郑州移动", "3号bot--自由瞄准", "4号bot--辅助瞄准"]
+
+    # 找出所有坏掉的bot
+    bad_bots = []
+    for i in range(4):
+        link = data.get(f"link{i}", "")
+        if len(link) < 30:
+            print(f"{bot_names[i]}失效")
+            bad_bots.append(i)
+
+    # 如果没有坏掉的bot，直接返回
+    if not bad_bots:
+        return
+
+    # 获取当前配置
+    num_1 = data.get("cha_chuan_1", {}).get("target_cmd1_bot", 0)
+    num_2 = data.get("cha_chuan_2", {}).get("target_cmd2_bot", 0)
+
+
+
+    # 更新配置1
+    if num_1 in bad_bots:
+        # 找第一个好的bot
+        for i in range(4):
+            if i not in bad_bots:
+                print(f"差传1从{bot_names[num_1]}切换到{bot_names[i]}")
+                cfg.update_config_item("cha_chuan_1.target_cmd1_bot", i)
+                break
+
+    # 更新配置2
+    if num_2 in bad_bots:
+        # 找第一个好的bot
+        for i in range(3,0,-1):
+            if i not in bad_bots:
+                print(f"差传2从{bot_names[num_2]}切换到{bot_names[i]}")
+                cfg.update_config_item("cha_chuan_2.target_cmd2_bot", i)
+                break
+
+
+
 
 
 
@@ -162,7 +222,7 @@ def fetch_quellgtacode():
 def cha_chuan_1():
     cfg = ConfigManager()
     data = cfg.get_all_data()
-    NUM = data.get("cha_chuan_1", {}).get("target_cmd1_style", 0)
+    NUM = data.get("cha_chuan_1", {}).get("target_cmd1_bot", 0)
     link = data.get(f"link{NUM}","")
     # 写入配置
     cfg.update_config_item("target_cmd1", link)
@@ -170,7 +230,7 @@ def cha_chuan_1():
 def cha_chuan_2():
     cfg = ConfigManager()
     data = cfg.get_all_data()
-    NUM = data.get("cha_chuan_2", {}).get("target_cmd2_style", 0)
+    NUM = data.get("cha_chuan_2", {}).get("target_cmd2_bot", 0)
     link = data.get(f"link{NUM}","")
     # 写入配置
     cfg.update_config_item("target_cmd2", link)
@@ -243,6 +303,7 @@ def refersh_main():
                         refersh_link(i, data)
 
                     # 更新差传1,2
+                    auto_change_bot()
                     cha_chuan_1()
                     cha_chuan_2()
 
@@ -282,6 +343,7 @@ def refersh_manual():
             for i in range(4):
                 refersh_link(i, data)
 
+            auto_change_bot()
             cha_chuan_1()
             cha_chuan_2()
 

@@ -90,7 +90,7 @@ def show_settings_ui(parent_window):
 
 # 坐标定义
 
-m_ROI = (0, 600, 600, 100)
+
 
 
 
@@ -170,66 +170,15 @@ def force_scroll(n=1):
 def get_key(key):
     cfg = ConfigManager()
     data = cfg.get_all_data()
-    return data.get(key, {}).get("key", False)
-
-
-
-m_menu = get_key("m_menu")
-weapon_menu  = get_key("weapon_menu")
-no_weapon  = get_key("no_weapon")
-shotgun_weapon  = get_key("shotgun_weapon")
-rpg_weapon = get_key("rpg_weapon")
-c4_weapon  = get_key("c4_weapon")
-pistol_weapon  = get_key("pistol_weapon")
-sniper_weapon = get_key("sniper_weapon")
-
-def run_m(sct=None):
-
-    # 设置输入库的防卡死和延迟
-    pydirectinput.PAUSE = 0.02
-    pydirectinput.FAILSAFE = False
-
-    # 低帧率模式
-    # 获取配置管理器实例（确保你已经导入并正确初始化了 ConfigManager）
-
-    config = ConfigManager()  # 如果是单例且已全局初始化，可以直接用那个实例
-
-    # 读取 low_fps 配置
-    config_data = config.get_all_data()
-    low_fps_enabled = config_data.get("low_fps", {}).get("enabled", False)
-
-    # 根据配置决定 extra_delay
-    extra_delay = 0.05 if low_fps_enabled else 0
-
-    m_menu = get_key("m_menu")
-
-    """主运行函数，支持复用 mss 实例"""
-    quick_press(m_menu)
-    time.sleep(0.3)  # 可根据实际情况调整
-
-
-    is_ceo = ka_ceo.judge(m_ROI,350,400,sct)
-
-    if is_ceo:
-        quick_press("enter")
-        quick_press("up")
-        quick_press("enter")
-        time.sleep(0.3)
-        quick_press(m_menu)
-        print("是ceo")
-
-
-    time.sleep(0.3)
-    for _ in range(10):
-        force_scroll(1)
-        time.sleep(0.05+extra_delay)
+    orign_key = data.get(key, {}).get("key", False)
+    key = orign_key.lower()
+    return key
 
 
 
 
-    quick_press("enter")
-    quick_press("enter")
-    quick_press("enter")
+
+
 
 def run_ka_cha_chuan():
     # 设置输入库的防卡死和延迟
@@ -237,6 +186,6 @@ def run_ka_cha_chuan():
     pydirectinput.FAILSAFE = False
 
     run_phone()
-    run_m()
+    ka_ceo.run_m()
 
     pydirectinput.PAUSE = 0.1

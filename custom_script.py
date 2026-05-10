@@ -196,7 +196,7 @@ def show_macro_editor_window(parent_window, script_id, config):
     # 创建子窗口
     editor_win = ctk.CTkToplevel(parent_window)
     editor_win.title(f"编辑代码 - {macro_name}")
-    editor_win.geometry("650x600")
+    editor_win.geometry("900x600")
     editor_win.resizable(True, True)
     editor_win.transient(parent_window)
     editor_win.grab_set()
@@ -210,10 +210,17 @@ def show_macro_editor_window(parent_window, script_id, config):
     )
     lbl_tip.pack(padx=15, pady=(15, 5), anchor="w")
 
-    # 核心文本框 (使用等宽字体，适合写代码)
+    # 主内容区：左右分栏
+    main_frame = ctk.CTkFrame(editor_win, fg_color="transparent")
+    main_frame.pack(padx=15, pady=10, fill="both", expand=True)
+    main_frame.grid_columnconfigure(0, weight=3)
+    main_frame.grid_columnconfigure(1, weight=1)
+    main_frame.grid_rowconfigure(0, weight=1)
+
+    # 左侧：代码编辑器 (使用等宽字体，适合写代码)
     textbox = ctk.CTkTextbox(
-        editor_win,
-        font=("Consolas", 14),  # 等宽字体
+        main_frame,
+        font=("Microsoft YaHei UI", 18, "bold"),  # 等宽字体
         fg_color="#FDFDFD",
         text_color="#333333",
         border_width=2,
@@ -221,7 +228,54 @@ def show_macro_editor_window(parent_window, script_id, config):
         wrap="none",  # 关闭自动换行，代码编辑器通常不自动换行
         spacing3=2  # 设置一点行间距，更好看
     )
-    textbox.pack(padx=15, pady=10, fill="both", expand=True)
+    textbox.grid(row=0, column=0, sticky="nsew", padx=(0, 5))
+
+    # 右侧：固定模板面板
+    template_frame = ctk.CTkScrollableFrame(
+        main_frame,
+        label_text="代码模板",
+        label_font=("Microsoft YaHei UI", 18, "bold"),
+        label_fg_color="#3B8ED0",
+        fg_color="#F0F4F8",
+        width=220
+    )
+    template_frame.grid(row=0, column=1, sticky="nsew", padx=(5, 0))
+
+    def insert_template(code):
+        textbox.insert("insert", code)
+        textbox.focus_set()
+
+    templates = [
+        ("按键延迟", "pydirectinput.PAUSE = 0.02"),
+
+        ("按键按下", "pydirectinput.keyDown('')"),
+        ("按键抬起", "pydirectinput.keyUp('')"),
+        ("延迟等待", "time.sleep(1.0)"),
+        ("长按", "pydirectinput.keyDown('shift')\ntime.sleep(1.0)\npydirectinput.keyUp('shift')"),
+        ("按键点击", "pydirectinput.press('')"),
+        ("鼠标相对移动", "pydirectinput.moveRel(x, y, relative=True)"),
+        ("鼠标点击", "pydirectinput.click()"),
+
+        ("循环N次", "for i in range(10):\n    pass"),
+
+        ("鼠标按下", "pydirectinput.mouseDown(button='left')"),
+        ("鼠标释放", "pydirectinput.mouseUp(button='left')"),
+        ("右键点击", "pydirectinput.rightClick()"),
+        ("双击", "pydirectinput.doubleClick()"),
+    ]
+
+    for tpl_label, tpl_code in templates:
+        btn = ctk.CTkButton(
+            template_frame,
+            text=tpl_label,
+            font=("Microsoft YaHei UI", 18,"bold"),
+            height=32,
+            corner_radius=5,
+            fg_color="#3B8ED0",
+            hover_color="#2B6EA8",
+            command=lambda c=tpl_code: insert_template(c)
+        )
+        btn.pack(padx=10, pady=3, fill="x")
 
     # ================= 核心逻辑：解决 Python 缩进问题 =================
     def handle_tab(event):

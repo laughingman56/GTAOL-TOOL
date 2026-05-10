@@ -16,7 +16,7 @@ import  io
 
 
 
-m_ROI = (0, 600, 600, 100)
+m_ROI = (0, 580, 700, 200)
 find_job_ROI = (1940, 1300, 620, 50)
 job_ROI = (400,130,300,80)
 
@@ -81,84 +81,144 @@ class ResolutionAdapter:
         }
 
 
-
-
-def analyze_text_info_pil(image):
-    """
-    终极纯 PIL 实现：
-    1. 相对色差：无惧游戏亮度拉满/白天泛白
-    2. 错位交叉：精准定位“白贴黑”的文字阴影边缘
-    3. 边界计算：识别文字跨度与像素量，预估字数
-    """
+#
+def analyze_text_info_pil(image, debug=False):
     import io
 
-    # 1. 载入并转为灰度图
     if isinstance(image, str):
-        gray = Image.open(image).convert('L')
+        img = Image.open(image).convert('RGB')
     elif isinstance(image, bytes):
-        gray = Image.open(io.BytesIO(image)).convert('L')
+        img = Image.open(io.BytesIO(image)).convert('RGB')
     else:
-        gray = image.convert('L')
+        img = image.convert('RGB')
 
-    # 2. 提取高亮区域 (阈值适度放宽到 200，以防高亮度下文字本身变灰)
-    # 这张图里的白色代表：可能是文字的像素
-    white_mask = gray.point(lambda p: 255 if p > 200 else 0, mode='1')
+    w, h = img.size
+    gray = img.convert('L')
 
-    # 3. 生成错位图（获取每个像素的【右侧】和【下方】像素）
-    # 向左平移1像素（把右边的画面拉过来）
+    # 分辨率修正：将当前分辨率下的文字宽度归一化到1440p基准
+    _, _, _, game_h = ResolutionAdapter.get_game_window_rect()
+    if game_h > 0:
+        scale_correction = ResolutionAdapter.BASE_H / game_h
+    else:
+        scale_correction = 1.0
+
+    if debug:
+        ts = int(__import__('time').time())
+        img.save(f"debug_0_original_{ts}.png")
+
+    # 1. RGB三通道白像素 (R,G,B > 200)
+    r, g, b = img.split()
+    r_mask = r.point(lambda p: 255 if p > 200 else 0, mode='1')
+    g_mask = g.point(lambda p: 255 if p > 200 else 0, mode='1')
+    b_mask = b.point(lambda p: 255 if p > 200 else 0, mode='1')
+    white_mask = ImageChops.logical_and(r_mask, g_mask)
+    white_mask = ImageChops.logical_and(white_mask, b_mask)
+    white_px = white_mask.convert('L').histogram()[255]
+
+    if debug:
+        white_mask.convert('L').save(f"debug_1_white_mask_{ts}.png")
+        print(f"[DEBUG] white_mask pixels: {white_px}")
+
+    # 2. 错位交叉相减（边缘 > 45）
     shifted_left = ImageChops.offset(gray, -1, 0)
-    # 向上平移1像素（把下边的画面拉过来）
     shifted_up = ImageChops.offset(gray, 0, -1)
-
-    # 4. 错位交叉相减：计算相对反差！(底层C语言瞬间完成)
-    # ImageChops.subtract 会计算 原图 - 错位图 (如果结果是负数自动变0)
-    # diff_x 代表：当前像素 比 它右边的像素 亮多少？
     diff_x = ImageChops.subtract(gray, shifted_left)
-    # diff_y 代表：当前像素 比 它下方的像素 亮多少？
     diff_y = ImageChops.subtract(gray, shifted_up)
-
-    # 5. 寻找“相对的黑白交界”
-    # 只要比旁边的像素亮超过 50 个色阶，就认为是“白贴黑”
-    # 这样就算游戏亮度拉满，阴影被洗白到了 150，文字是 255，差值 105 (>50) 依然能被完美抓出！
-    edge_x = diff_x.point(lambda p: 255 if p > 50 else 0, mode='1')
-    edge_y = diff_y.point(lambda p: 255 if p > 50 else 0, mode='1')
-
-    # 合并 X 和 Y 方向的边缘
+    edge_x = diff_x.point(lambda p: 255 if p > 45 else 0, mode='1')
+    edge_y = diff_y.point(lambda p: 255 if p > 45 else 0, mode='1')
     dark_adjacent_mask = ImageChops.logical_or(edge_x, edge_y)
+    edge_px = dark_adjacent_mask.convert('L').histogram()[255]
 
-    # 6. 经典取交集：当前像素既是“绝对高亮”，且旁边“存在相对较暗的阴影”
+    if debug:
+        dark_adjacent_mask.convert('L').save(f"debug_2_edge_mask_{ts}.png")
+        print(f"[DEBUG] edge_mask pixels: {edge_px}")
+
+    # 3. 取交集
     text_edges = ImageChops.logical_and(white_mask, dark_adjacent_mask)
+    raw_px = text_edges.convert('L').histogram()[255]
 
-    # --- 下面是统计文字长短的逻辑 ---
+    if debug:
+        text_edges.convert('L').save(f"debug_3_text_edges_raw_{ts}.png")
+        print(f"[DEBUG] text_edges (raw) pixels: {raw_px}")
 
-    # 获取包含这些有效边缘像素的最小矩形框
+    # 4. 形态学去噪 MaxFilter(3) 消除孤立1px噪点
+    text_l = text_edges.convert('L')
+    text_l = text_l.filter(ImageFilter.MaxFilter(3))
+    text_edges = text_l.point(lambda p: 255 if p > 128 else 0, mode='1')
+    after_px = text_edges.convert('L').histogram()[255]
+
+    if debug:
+        text_edges.convert('L').save(f"debug_4_text_edges_morph_{ts}.png")
+        print(f"[DEBUG] text_edges (after morph) pixels: {after_px}")
+
     bbox = text_edges.getbbox()
-
     if not bbox:
-        return {
-            "has_text": False,
-            "text_width": 0,
-            "pixel_count": 0
-        }
+        if debug:
+            print(f"[DEBUG] RESULT: no bbox → 0")
+        return {"has_text": False, "text_width": 0, "pixel_count": 0}
 
     left, upper, right, lower = bbox
-    text_width = right - left  # 文字横向总跨度（判定字数的最强指标）
+    text_width = right - left
+    text_height = lower - upper
 
-    # 统计有效边缘的像素量
-    colors = text_edges.convert('L').getcolors()
-    pixel_count = 0
-    if colors:
-        for count, color in colors:
-            if color == 255:
-                pixel_count = count
+    # 5. 宽度上限 > 0.95 图宽 → 噪声
+    if text_width > w * 0.95:
+        if debug:
+            print(f"[DEBUG] RESULT: width {text_width} > {w * 0.95} → 0")
+        return {"has_text": False, "text_width": 0, "pixel_count": 0}
+
+    pixel_count = after_px
+
+    # 6. 密度校验 < 0.01 → 噪声
+    bbox_area = text_width * text_height
+    if bbox_area > 0:
+        density = pixel_count / bbox_area
+        if debug:
+            print(f"[DEBUG] bbox=({left},{upper},{right},{lower}) w={text_width} h={text_height} area={bbox_area} px={pixel_count} density={density:.4f}")
+        if density < 0.01:
+            if debug:
+                print(f"[DEBUG] RESULT: density {density:.4f} < 0.01 → 0")
+            return {"has_text": False, "text_width": 0, "pixel_count": 0}
+    elif debug:
+        print(f"[DEBUG] bbox=({left},{upper},{right},{lower}) w={text_width} h={text_height} area=0")
+
+    # 7. 水平投影：用列密度截取真实文字区域，过滤面板边框/图标
+    crop = text_edges.crop(bbox)
+    crop_w, crop_h = crop.size
+    col_white = [0] * crop_w
+    crop_data = list(crop.getdata())
+    for y in range(crop_h):
+        row_start = y * crop_w
+        for x in range(crop_w):
+            if crop_data[row_start + x] == 255:
+                col_white[x] += 1
+
+    if col_white and max(col_white) > 0:
+        max_col = max(col_white)
+        threshold = max_col * 0.15
+        first = 0
+        last = crop_w - 1
+        for i in range(crop_w):
+            if col_white[i] >= threshold:
+                first = i
                 break
+        for i in range(crop_w - 1, -1, -1):
+            if col_white[i] >= threshold:
+                last = i
+                break
+        refined_width = last - first + 1
+        if debug:
+            print(f"[DEBUG] projection: max_col={max_col} threshold={threshold:.1f} first={first} last={last} refined_width={refined_width}")
+
+
+        text_width = int(refined_width * scale_correction)
+
+    if debug:
+        print(f"[DEBUG] RESULT: text_width={text_width}")
 
     return {
-        #"has_text": pixel_count > 10,  # 超过 10 个边缘像素才算有字，过滤极限微小噪点
         "text_width": text_width,
-        #"pixel_count": pixel_count
     }
-
 
 def capture_screen(sct, monitor):
     """
@@ -197,7 +257,7 @@ def judge(roi,min,max,sct=None):
         if screen1 is None:
             return False  # 明确返回 False 而不是 None
 
-        info = analyze_text_info_pil(screen1)
+        info = analyze_text_info_pil(screen1,debug=False)
         length = info['text_width']
 
         print(f"文字总跨度: {info['text_width']} 像素")
@@ -371,7 +431,7 @@ def run_m(sct=None):
     time.sleep(0.3)  # 可根据实际情况调整
 
 
-    is_ceo = judge(m_ROI,350,400,sct)
+    is_ceo = judge(m_ROI,500,600,sct)
 
     if is_ceo:
         quick_press("enter")
@@ -461,15 +521,15 @@ def run_ka_ceo(sct=None):
 
     start_time = time.time()
     while True:
-        if time.time() - start_time > 45:
+        if time.time() - start_time > 59:
             cancel_phone()
             print("超过时间，跳出循环")
             break
 
-        pydirectinput.moveRel(0, 1000,relative=True)
+        pydirectinput.moveRel(0, 2000,relative=True)
 
-        is_job = judge(find_job_ROI,100,500, sct)
-        in_job = judge(job_ROI, 100,500,sct)
+        is_job = judge(find_job_ROI,100,600, sct)
+        in_job = judge(job_ROI, 100,600,sct)
 
 
 
@@ -480,7 +540,7 @@ def run_ka_ceo(sct=None):
             time.sleep(0.1)
             run_m()
 
-            if judge(job_ROI, 100,500,sct):
+            if judge(job_ROI, 100,600,sct):
                 print("匹配进入差事，esc退出")
                 time.sleep(0.5)
 
