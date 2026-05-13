@@ -115,10 +115,48 @@ def test_load_weights_invalid_json():
         os.unlink(tmp_path)
 
 
+from PIL import Image
+
+
+def test_preprocess():
+    from find_num import preprocess
+
+    # 创建合成测试图像：16x16 纯白
+    img = Image.new("L", (16, 16), color=255)
+    vec = preprocess(img)
+    assert len(vec) == 256, f"Expected 256, got {len(vec)}"
+    assert all(abs(v - 1.0) < 0.01 for v in vec), "White should normalize to ~1.0"
+    print("  PASS test_preprocess_white")
+
+    # 创建合成测试图像：纯黑
+    img2 = Image.new("L", (16, 16), color=0)
+    vec2 = preprocess(img2)
+    assert all(abs(v) < 0.01 for v in vec2), "Black should normalize to ~0.0"
+    print("  PASS test_preprocess_black")
+
+    # 测试：非 16x16 输入自动 resize
+    img3 = Image.new("L", (32, 32), color=128)
+    vec3 = preprocess(img3)
+    assert len(vec3) == 256, f"Expected 256 after resize, got {len(vec3)}"
+    print("  PASS test_preprocess_resize")
+
+
+def test_preprocess_normalize_range():
+    from find_num import preprocess
+
+    img = Image.new("L", (8, 4), color=128)
+    vec = preprocess(img)
+    for v in vec:
+        assert 0.0 <= v <= 1.0, f"Value {v} out of [0,1] range"
+    print("  PASS test_preprocess_range")
+
+
 if __name__ == "__main__":
     test_forward()
     test_load_config()
     test_load_weights()
     test_load_config_invalid_json()
     test_load_weights_invalid_json()
+    test_preprocess()
+    test_preprocess_normalize_range()
     print("All tests passed!")
