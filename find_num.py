@@ -1,4 +1,23 @@
 import math
+import json
+import os
+
+
+def load_config(path="num_config.json"):
+    if not os.path.exists(path):
+        print(f"[find_num] config not found: {path}")
+        return {}
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def load_weights(path="num_weights.json"):
+    if not os.path.exists(path):
+        raise RuntimeError(
+            f"Weights file not found: {path}. Run train_num.py first."
+        )
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
 def _dot(a, b):
