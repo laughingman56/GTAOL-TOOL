@@ -65,11 +65,17 @@ class Net:
 
 
 def augment(X, y):
+    N = X.shape[0]
     X_aug = X.copy()
-    noise = np.random.normal(0, 0.02, X_aug.shape).astype(np.float32)
+    noise = np.random.uniform(-0.02, 0.02, X_aug.shape).astype(np.float32)
     X_aug += noise
     X_aug = np.clip(X_aug, 0.0, 1.0)
-    X_aug = np.roll(X_aug, shift=np.random.randint(-1, 2), axis=1)
+    X_aug2d = X_aug.reshape(N, 16, 16)
+    shift_y = np.random.randint(-1, 2)
+    shift_x = np.random.randint(-1, 2)
+    X_aug2d = np.roll(X_aug2d, shift_y, axis=1)
+    X_aug2d = np.roll(X_aug2d, shift_x, axis=2)
+    X_aug = X_aug2d.reshape(N, 256)
     return X_aug, y
 
 
