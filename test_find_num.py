@@ -1,4 +1,5 @@
 import math
+import numpy as np
 
 
 def test_forward():
@@ -302,6 +303,84 @@ def test_recognize_unsupported_digits():
     print("  PASS test_recognize_unsupported_digits")
 
 
+def test_end_to_end():
+    from find_num import _set_weights, forward, preprocess
+
+    samples = []
+    template_rng = np.random.RandomState(42)
+    templates = {}
+    for digit in range(10):
+        templates[digit] = (template_rng.randint(0, 256, (20, 20), dtype=np.uint8))
+
+    for digit in range(10):
+        for variant in range(20):
+            base = templates[digit].astype(np.int16)
+            noise_rng = np.random.RandomState(digit * 100 + variant)
+            noise = noise_rng.randint(-30, 30, (20, 20), dtype=np.int16)
+            arr = np.clip(base + noise, 0, 255).astype(np.uint8)
+            img = Image.fromarray(arr, mode="L")
+            vec = preprocess(img)
+            samples.append((vec, digit))
+
+    X = np.array([s[0] for s in samples], dtype=np.float32)
+    y = np.array([s[1] for s in samples], dtype=np.int64)
+
+    rng = np.random.RandomState(42)
+    w1 = (rng.randn(256, 32) * 0.01).astype(np.float32)
+    b1 = np.zeros(32, dtype=np.float32)
+    w2 = (rng.randn(32, 10) * 0.01).astype(np.float32)
+    b2 = np.zeros(10, dtype=np.float32)
+
+    lr = 0.01
+    for epoch in range(500):
+        h = np.maximum(0, X @ w1 + b1)
+        scores = h @ w2 + b2
+        shifted = scores - np.max(scores, axis=1, keepdims=True)
+        exps = np.exp(shifted)
+        probs = exps / np.sum(exps, axis=1, keepdims=True)
+
+        N = len(y)
+        dout = probs.copy()
+        dout[np.arange(N), y] -= 1
+        dout /= N
+
+        dw2 = h.T @ dout + 0.001 * w2
+        db2 = np.sum(dout, axis=0)
+        dh = dout @ w2.T
+        dh[h <= 0] = 0
+        dw1 = X.T @ dh + 0.001 * w1
+        db1 = np.sum(dh, axis=0)
+
+        w2 -= lr * dw2
+        b2 -= lr * db2
+        w1 -= lr * dw1
+        b1 -= lr * db1
+
+        if epoch > 0 and epoch % 100 == 0:
+            lr *= 0.5
+
+        if epoch % 200 == 0:
+            acc = np.mean(np.argmax(probs, axis=1) == y)
+            print(f"    e2e train epoch {epoch} accuracy={acc:.3f}")
+
+    mock_w = {
+        "w1": w1.T.tolist(),
+        "b1": b1.tolist(),
+        "w2": w2.T.tolist(),
+        "b2": b2.tolist(),
+    }
+    _set_weights(mock_w)
+
+    correct = 0
+    for vec, label in samples:
+        idx = forward(vec, mock_w["w1"], mock_w["b1"], mock_w["w2"], mock_w["b2"])
+        if idx == label:
+            correct += 1
+    acc = correct / len(samples)
+    assert acc >= 0.5, f"E2E accuracy too low: {acc:.2f}"
+    print(f"  PASS test_end_to_end (accuracy={acc:.2f})")
+
+
 if __name__ == "__main__":
     test_forward()
     test_load_config()
@@ -317,4 +396,5 @@ if __name__ == "__main__":
     test_recognize_missing_field()
     test_recognize_negative_coords()
     test_recognize_unsupported_digits()
+    test_end_to_end()
     print("All tests passed!")
