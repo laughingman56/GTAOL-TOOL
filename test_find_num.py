@@ -151,6 +151,100 @@ def test_preprocess_normalize_range():
     print("  PASS test_preprocess_range")
 
 
+from PIL import Image
+
+
+def test_recognize_single_digit():
+    from find_num import _get_weights, _set_weights, recognize, load_config
+
+    mock_weights = {
+        "w1": [[0.01] * 256 for _ in range(32)],
+        "b1": [0.0] * 32,
+        "w2": [[0.0] * 32 for _ in range(10)],
+        "b2": [0.0] * 10
+    }
+    for i in range(32):
+        mock_weights["w2"][3][i] = 100.0
+
+    _set_weights(mock_weights)
+
+    screenshot = Image.new("RGB", (200, 100), color=(0, 0, 0))
+    for x in range(10, 30):
+        for y in range(10, 30):
+            screenshot.putpixel((x, y), (255, 255, 255))
+
+    config = {
+        "test_num": {"x1": 10, "y1": 10, "x2": 30, "y2": 30, "digits": 1}
+    }
+
+    result = recognize(screenshot, config)
+    assert "test_num" in result, "Should have 'test_num' key"
+    assert result["test_num"] == "3", f"Expected '3', got {result['test_num']}"
+    print("  PASS test_recognize_single_digit")
+
+
+def test_recognize_out_of_bounds():
+    from find_num import _set_weights, recognize
+
+    mock_weights = {
+        "w1": [[0.01] * 256 for _ in range(32)],
+        "b1": [0.0] * 32,
+        "w2": [[0.0] * 32 for _ in range(10)],
+        "b2": [0.0] * 10
+    }
+    _set_weights(mock_weights)
+
+    screenshot = Image.new("RGB", (100, 50))
+    config = {
+        "bad": {"x1": 200, "y1": 10, "x2": 250, "y2": 30, "digits": 1}
+    }
+
+    result = recognize(screenshot, config)
+    assert result == {}, f"Expected empty dict for OOB, got {result}"
+    print("  PASS test_recognize_out_of_bounds")
+
+
+def test_recognize_empty_config():
+    from find_num import recognize
+
+    screenshot = Image.new("RGB", (100, 50))
+    result = recognize(screenshot, {})
+    assert result == {}, f"Expected empty dict, got {result}"
+    print("  PASS test_recognize_empty_config")
+
+
+def test_recognize_two_digit():
+    from find_num import _set_weights, recognize
+
+    mock_weights = {
+        "w1": [[0.01] * 256 for _ in range(32)],
+        "b1": [0.0] * 32,
+        "w2": [[0.0] * 32 for _ in range(10)],
+        "b2": [0.0] * 10
+    }
+    for i in range(32):
+        mock_weights["w2"][0][i] = 100.0
+
+    _set_weights(mock_weights)
+
+    screenshot = Image.new("RGB", (200, 100), color=(0, 0, 0))
+    for x in range(10, 30):
+        for y in range(10, 30):
+            screenshot.putpixel((x, y), (255, 255, 255))
+    for x in range(30, 50):
+        for y in range(10, 30):
+            screenshot.putpixel((x, y), (255, 255, 255))
+
+    config = {
+        "ammo": {"x1": 10, "y1": 10, "x2": 50, "y2": 30, "digits": 2}
+    }
+
+    result = recognize(screenshot, config)
+    assert "ammo" in result, "Should have 'ammo' key"
+    assert result["ammo"] == "00", f"Expected '00', got {result['ammo']}"
+    print("  PASS test_recognize_two_digit")
+
+
 if __name__ == "__main__":
     test_forward()
     test_load_config()
@@ -159,4 +253,8 @@ if __name__ == "__main__":
     test_load_weights_invalid_json()
     test_preprocess()
     test_preprocess_normalize_range()
+    test_recognize_single_digit()
+    test_recognize_out_of_bounds()
+    test_recognize_empty_config()
+    test_recognize_two_digit()
     print("All tests passed!")
