@@ -84,8 +84,41 @@ def test_load_weights():
         print("  PASS test_load_weights_missing")
 
 
+def test_load_config_invalid_json():
+    from find_num import load_config
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        f.write("not valid json{{{")
+        tmp_path = f.name
+
+    try:
+        result = load_config(tmp_path)
+        assert result == {}, f"Expected empty dict for corrupt JSON, got {result}"
+        print("  PASS test_load_config_invalid_json")
+    finally:
+        os.unlink(tmp_path)
+
+
+def test_load_weights_invalid_json():
+    from find_num import load_weights
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        f.write("not valid json{{{")
+        tmp_path = f.name
+
+    try:
+        load_weights(tmp_path)
+        assert False, "Should have raised RuntimeError"
+    except RuntimeError:
+        print("  PASS test_load_weights_invalid_json")
+    finally:
+        os.unlink(tmp_path)
+
+
 if __name__ == "__main__":
     test_forward()
     test_load_config()
     test_load_weights()
+    test_load_config_invalid_json()
+    test_load_weights_invalid_json()
     print("All tests passed!")

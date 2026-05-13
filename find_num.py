@@ -8,7 +8,11 @@ def load_config(path="num_config.json"):
         print(f"[find_num] config not found: {path}")
         return {}
     with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+        try:
+            return json.load(f)
+        except json.JSONDecodeError:
+            print(f"[find_num] invalid JSON in config: {path}")
+            return {}
 
 
 def load_weights(path="num_weights.json"):
@@ -17,7 +21,12 @@ def load_weights(path="num_weights.json"):
             f"Weights file not found: {path}. Run train_num.py first."
         )
     with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+        try:
+            return json.load(f)
+        except json.JSONDecodeError as e:
+            raise RuntimeError(
+                f"Weights file is invalid JSON: {path}"
+            ) from e
 
 
 def _dot(a, b):
