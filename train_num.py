@@ -14,15 +14,19 @@ def load_samples(data_dir="num_samples"):
             if not fname.lower().endswith(".png"):
                 continue
             fpath = os.path.join(label_dir, fname)
-            img = Image.open(fpath).convert("L")
+            try:
+                img = Image.open(fpath).convert("L")
+            except Exception:
+                print(f"  [warn] skipping corrupted image: {fpath}")
+                continue
             img = img.resize((16, 16), Image.Resampling.LANCZOS)
             pixels = np.array(img.getdata(), dtype=np.float32) / 255.0
             X.append(pixels)
             y.append(label)
     if not X:
-        raise RuntimeError(f"No .png samples found in {data_dir}/0-9/")
-    indices = np.arange(len(X))
-    np.random.shuffle(indices)
+        raise RuntimeError(f"No .png samples found under {data_dir}/0/ through {data_dir}/9/")
+    rng = np.random.RandomState(42)
+    indices = rng.permutation(len(X))
     return np.array(X)[indices], np.array(y)[indices]
 
 
@@ -134,6 +138,11 @@ def save_weights(net, path="num_weights.json"):
 
 
 def collect_samples(screenshot_path, config_path="num_config.json", output_dir="num_samples"):
+    """Collect raw digit crops from a screenshot for later manual sorting.
+    
+    Crops are saved to output_dir/ as {region_name}.png.
+    User should then sort them into output_dir/0/ ... output_dir/9/ by digit label.
+    """
     import sys
     sys.path.insert(0, os.path.dirname(__file__))
     from find_num import load_config
@@ -143,8 +152,13 @@ def collect_samples(screenshot_path, config_path="num_config.json", output_dir="
     os.makedirs(output_dir, exist_ok=True)
 
     for name, region in config.items():
-        x1, y1 = region["x1"], region["y1"]
-        x2, y2 = region["x2"], region["y2"]
+        x1 = region.get("x1")
+        y1 = region.get("y1")
+        x2 = region.get("x2")
+        y2 = region.get("y2")
+        if None in (x1, y1, x2, y2):
+            print(f"  [warn] missing coords for region: {name}")
+            continue
         crop = screenshot.crop((x1, y1, x2, y2))
         fname = f"{name}.png"
         fpath = os.path.join(output_dir, fname)
