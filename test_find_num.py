@@ -245,6 +245,63 @@ def test_recognize_two_digit():
     print("  PASS test_recognize_two_digit")
 
 
+def test_recognize_missing_field():
+    from find_num import _set_weights, recognize
+
+    mock_weights = {
+        "w1": [[0.01] * 256 for _ in range(32)],
+        "b1": [0.0] * 32,
+        "w2": [[0.0] * 32 for _ in range(10)],
+        "b2": [0.0] * 10
+    }
+    _set_weights(mock_weights)
+
+    screenshot = Image.new("RGB", (100, 50))
+    config = {"bad": {"x1": 10}}  # missing y1/x2/y2
+
+    result = recognize(screenshot, config)
+    assert result == {}, f"Expected empty dict for missing coords, got {result}"
+    print("  PASS test_recognize_missing_field")
+
+
+def test_recognize_negative_coords():
+    from find_num import _set_weights, recognize
+
+    mock_weights = {
+        "w1": [[0.01] * 256 for _ in range(32)],
+        "b1": [0.0] * 32,
+        "w2": [[0.0] * 32 for _ in range(10)],
+        "b2": [0.0] * 10
+    }
+    _set_weights(mock_weights)
+
+    screenshot = Image.new("RGB", (100, 50))
+    config = {"bad": {"x1": -5, "y1": 10, "x2": 20, "y2": 30, "digits": 1}}
+
+    result = recognize(screenshot, config)
+    assert result == {}, f"Expected empty dict for negative coords, got {result}"
+    print("  PASS test_recognize_negative_coords")
+
+
+def test_recognize_unsupported_digits():
+    from find_num import _set_weights, recognize
+
+    mock_weights = {
+        "w1": [[0.01] * 256 for _ in range(32)],
+        "b1": [0.0] * 32,
+        "w2": [[0.0] * 32 for _ in range(10)],
+        "b2": [0.0] * 10
+    }
+    _set_weights(mock_weights)
+
+    screenshot = Image.new("RGB", (100, 50))
+    config = {"bad": {"x1": 10, "y1": 10, "x2": 30, "y2": 30, "digits": 3}}
+
+    result = recognize(screenshot, config)
+    assert result == {}, f"Expected empty dict for unsupported digits, got {result}"
+    print("  PASS test_recognize_unsupported_digits")
+
+
 if __name__ == "__main__":
     test_forward()
     test_load_config()
@@ -257,4 +314,7 @@ if __name__ == "__main__":
     test_recognize_out_of_bounds()
     test_recognize_empty_config()
     test_recognize_two_digit()
+    test_recognize_missing_field()
+    test_recognize_negative_coords()
+    test_recognize_unsupported_digits()
     print("All tests passed!")

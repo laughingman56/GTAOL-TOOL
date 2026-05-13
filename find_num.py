@@ -76,11 +76,16 @@ def recognize(screenshot, config):
     sw, sh = screenshot.size
 
     for name, region in config.items():
-        x1, y1 = region["x1"], region["y1"]
-        x2, y2 = region["x2"], region["y2"]
+        x1 = region.get("x1")
+        y1 = region.get("y1")
+        x2 = region.get("x2")
+        y2 = region.get("y2")
+        if None in (x1, y1, x2, y2):
+            print(f"[find_num] missing coords for region: {name}")
+            continue
         digits = region.get("digits", 1)
 
-        if x1 >= sw or y1 >= sh or x2 > sw or y2 > sh:
+        if x1 < 0 or y1 < 0 or x1 >= sw or y1 >= sh or x2 > sw or y2 > sh:
             continue
 
         crop = screenshot.crop((x1, y1, x2, y2))
@@ -89,8 +94,10 @@ def recognize(screenshot, config):
             vec = preprocess(crop)
             idx = forward(vec, w["w1"], w["b1"], w["w2"], w["b2"])
             result[name] = str(idx)
-        else:
+        elif digits == 2:
             cw = crop.size[0]
+            if cw < 2:
+                continue
             half = cw // 2
             left = crop.crop((0, 0, half, crop.size[1]))
             right = crop.crop((half, 0, cw, crop.size[1]))
@@ -99,5 +106,7 @@ def recognize(screenshot, config):
             l_idx = forward(lv, w["w1"], w["b1"], w["w2"], w["b2"])
             r_idx = forward(rv, w["w1"], w["b1"], w["w2"], w["b2"])
             result[name] = f"{l_idx}{r_idx}"
+        else:
+            print(f"[find_num] unsupported digits={digits} for region: {name}")
 
     return result
