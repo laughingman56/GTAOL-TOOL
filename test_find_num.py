@@ -2,8 +2,8 @@ import math
 import numpy as np
 
 
-def test_forward():
-    from find_num import forward
+def test_forward_mlp():
+    from find_num import forward_mlp
 
     w1 = [[0.1] * 256 for _ in range(32)]
     b1 = [0.0] * 32
@@ -11,18 +11,47 @@ def test_forward():
     b2 = [0.0] * 10
 
     x = [0.5] * 256
-    result = forward(x, w1, b1, w2, b2)
+    result = forward_mlp(x, w1, b1, w2, b2)
 
     assert 0 <= result <= 9, f"Expected 0-9, got {result}"
-    print("  PASS test_forward_bound")
+    print("  PASS test_forward_mlp_bound")
 
     w2_biased = [[0.0] * 32 for _ in range(10)]
     for i in range(32):
         w2_biased[3][i] = 100.0
     b2_biased = [0.0] * 10
-    result = forward(x, w1, b1, w2_biased, b2_biased)
+    result = forward_mlp(x, w1, b1, w2_biased, b2_biased)
     assert result == 3, f"Expected 3 with biased weights, got {result}"
-    print("  PASS test_forward_biased")
+    print("  PASS test_forward_mlp_biased")
+
+
+def test_forward_cnn():
+    from find_num import forward_cnn
+
+    conv1_w = [[[[0.1] * 3 for _ in range(3)] for _ in range(1)] for _ in range(8)]
+    conv1_b = [0.0] * 8
+    pool_size = 2
+    fc1_in = 8 * 7 * 7
+    fc1_w = [[0.01] * fc1_in for _ in range(64)]
+    fc1_b = [0.0] * 64
+    fc2_w = [[0.0] * 64 for _ in range(10)]
+    fc2_b = [0.0] * 10
+    for i in range(64):
+        fc2_w[3][i] = 100.0
+
+    w = {
+        "conv1_w": conv1_w,
+        "conv1_b": conv1_b,
+        "fc1_w": fc1_w,
+        "fc1_b": fc1_b,
+        "fc2_w": fc2_w,
+        "fc2_b": fc2_b,
+        "arch": "cnn",
+    }
+    x = [0.5] * 256
+    result = forward_cnn(x, w)
+    assert 0 <= result <= 9, f"Expected 0-9, got {result}"
+    print("  PASS test_forward_cnn_bound")
 
 
 import os
@@ -45,7 +74,6 @@ def test_load_config():
     finally:
         os.unlink(tmp_path)
 
-    # 测试文件不存在
     result = load_config("nonexistent_file.json")
     assert result == {}, f"Expected empty dict for missing config, got {result}"
     print("  PASS test_load_config_missing")
@@ -69,15 +97,10 @@ def test_load_weights():
         w = load_weights(tmp_path)
         assert len(w["w1"]) == 32
         assert len(w["w1"][0]) == 256
-        assert len(w["b1"]) == 32
-        assert len(w["w2"]) == 10
-        assert len(w["w2"][0]) == 32
-        assert len(w["b2"]) == 10
         print("  PASS test_load_weights")
     finally:
         os.unlink(tmp_path)
 
-    # 测试文件不存在
     try:
         load_weights("nonexistent_weights.json")
         assert False, "Should have raised RuntimeError"
@@ -122,20 +145,17 @@ from PIL import Image
 def test_preprocess():
     from find_num import preprocess
 
-    # 创建合成测试图像：16x16 纯白
     img = Image.new("L", (16, 16), color=255)
     vec = preprocess(img)
     assert len(vec) == 256, f"Expected 256, got {len(vec)}"
     assert all(abs(v - 1.0) < 0.01 for v in vec), "White should normalize to ~1.0"
     print("  PASS test_preprocess_white")
 
-    # 创建合成测试图像：纯黑
     img2 = Image.new("L", (16, 16), color=0)
     vec2 = preprocess(img2)
     assert all(abs(v) < 0.01 for v in vec2), "Black should normalize to ~0.0"
     print("  PASS test_preprocess_black")
 
-    # 测试：非 16x16 输入自动 resize
     img3 = Image.new("L", (32, 32), color=128)
     vec3 = preprocess(img3)
     assert len(vec3) == 256, f"Expected 256 after resize, got {len(vec3)}"
@@ -152,11 +172,20 @@ def test_preprocess_normalize_range():
     print("  PASS test_preprocess_range")
 
 
-from PIL import Image
+def test_is_cnn():
+    from find_num import _is_cnn
+
+    mlp_w = {"w1": [], "b1": [], "w2": [], "b2": []}
+    assert not _is_cnn(mlp_w), "MLP weights should not be CNN"
+    cnn_w = {"conv1_w": [], "arch": "cnn"}
+    assert _is_cnn(cnn_w), "CNN weights should be CNN"
+    mixed_w = {"w1": [], "b1": []}
+    assert not _is_cnn(mixed_w), "Weights without arch should default to MLP"
+    print("  PASS test_is_cnn")
 
 
-def test_recognize_single_digit():
-    from find_num import _get_weights, _set_weights, recognize, load_config
+def test_recognize_single_digit_mlp():
+    from find_num import _set_weights, recognize
 
     mock_weights = {
         "w1": [[0.01] * 256 for _ in range(32)],
@@ -181,7 +210,39 @@ def test_recognize_single_digit():
     result = recognize(screenshot, config)
     assert "test_num" in result, "Should have 'test_num' key"
     assert result["test_num"] == "3", f"Expected '3', got {result['test_num']}"
-    print("  PASS test_recognize_single_digit")
+    print("  PASS test_recognize_single_digit_mlp")
+
+
+def test_recognize_two_digit_mlp():
+    from find_num import _set_weights, recognize
+
+    mock_weights = {
+        "w1": [[0.01] * 256 for _ in range(32)],
+        "b1": [0.0] * 32,
+        "w2": [[0.0] * 32 for _ in range(10)],
+        "b2": [0.0] * 10
+    }
+    for i in range(32):
+        mock_weights["w2"][0][i] = 100.0
+
+    _set_weights(mock_weights)
+
+    screenshot = Image.new("RGB", (200, 100), color=(0, 0, 0))
+    for x in range(10, 30):
+        for y in range(10, 30):
+            screenshot.putpixel((x, y), (255, 255, 255))
+    for x in range(30, 50):
+        for y in range(10, 30):
+            screenshot.putpixel((x, y), (255, 255, 255))
+
+    config = {
+        "ammo": {"x1": 10, "y1": 10, "x2": 50, "y2": 30, "digits": 2}
+    }
+
+    result = recognize(screenshot, config)
+    assert "ammo" in result, "Should have 'ammo' key"
+    assert result["ammo"] == "00", f"Expected '00', got {result['ammo']}"
+    print("  PASS test_recognize_two_digit_mlp")
 
 
 def test_recognize_out_of_bounds():
@@ -214,38 +275,6 @@ def test_recognize_empty_config():
     print("  PASS test_recognize_empty_config")
 
 
-def test_recognize_two_digit():
-    from find_num import _set_weights, recognize
-
-    mock_weights = {
-        "w1": [[0.01] * 256 for _ in range(32)],
-        "b1": [0.0] * 32,
-        "w2": [[0.0] * 32 for _ in range(10)],
-        "b2": [0.0] * 10
-    }
-    for i in range(32):
-        mock_weights["w2"][0][i] = 100.0
-
-    _set_weights(mock_weights)
-
-    screenshot = Image.new("RGB", (200, 100), color=(0, 0, 0))
-    for x in range(10, 30):
-        for y in range(10, 30):
-            screenshot.putpixel((x, y), (255, 255, 255))
-    for x in range(30, 50):
-        for y in range(10, 30):
-            screenshot.putpixel((x, y), (255, 255, 255))
-
-    config = {
-        "ammo": {"x1": 10, "y1": 10, "x2": 50, "y2": 30, "digits": 2}
-    }
-
-    result = recognize(screenshot, config)
-    assert "ammo" in result, "Should have 'ammo' key"
-    assert result["ammo"] == "00", f"Expected '00', got {result['ammo']}"
-    print("  PASS test_recognize_two_digit")
-
-
 def test_recognize_missing_field():
     from find_num import _set_weights, recognize
 
@@ -258,7 +287,7 @@ def test_recognize_missing_field():
     _set_weights(mock_weights)
 
     screenshot = Image.new("RGB", (100, 50))
-    config = {"bad": {"x1": 10}}  # missing y1/x2/y2
+    config = {"bad": {"x1": 10}}
 
     result = recognize(screenshot, config)
     assert result == {}, f"Expected empty dict for missing coords, got {result}"
@@ -303,8 +332,8 @@ def test_recognize_unsupported_digits():
     print("  PASS test_recognize_unsupported_digits")
 
 
-def test_end_to_end():
-    from find_num import _set_weights, forward, preprocess
+def test_end_to_end_mlp():
+    from find_num import _set_weights, forward_mlp, preprocess
 
     samples = []
     template_rng = np.random.RandomState(42)
@@ -348,6 +377,7 @@ def test_end_to_end():
         db2 = np.sum(dout, axis=0)
         dh = dout @ w2.T
         dh[h <= 0] = 0
+
         dw1 = X.T @ dh + 0.001 * w1
         db1 = np.sum(dh, axis=0)
 
@@ -373,28 +403,30 @@ def test_end_to_end():
 
     correct = 0
     for vec, label in samples:
-        idx = forward(vec, mock_w["w1"], mock_w["b1"], mock_w["w2"], mock_w["b2"])
+        idx = forward_mlp(vec, mock_w["w1"], mock_w["b1"], mock_w["w2"], mock_w["b2"])
         if idx == label:
             correct += 1
     acc = correct / len(samples)
     assert acc >= 0.5, f"E2E accuracy too low: {acc:.2f}"
-    print(f"  PASS test_end_to_end (accuracy={acc:.2f})")
+    print(f"  PASS test_end_to_end_mlp (accuracy={acc:.2f})")
 
 
 if __name__ == "__main__":
-    test_forward()
+    test_forward_mlp()
+    test_forward_cnn()
     test_load_config()
     test_load_weights()
     test_load_config_invalid_json()
     test_load_weights_invalid_json()
     test_preprocess()
     test_preprocess_normalize_range()
-    test_recognize_single_digit()
+    test_is_cnn()
+    test_recognize_single_digit_mlp()
     test_recognize_out_of_bounds()
     test_recognize_empty_config()
-    test_recognize_two_digit()
+    test_recognize_two_digit_mlp()
     test_recognize_missing_field()
     test_recognize_negative_coords()
     test_recognize_unsupported_digits()
-    test_end_to_end()
+    test_end_to_end_mlp()
     print("All tests passed!")

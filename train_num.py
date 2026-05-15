@@ -30,42 +30,115 @@ def load_samples(data_dir="num_samples"):
     return np.array(X)[indices], np.array(y)[indices]
 
 
-class Net:
-    def __init__(self, input_dim=256, hidden_dim=128, output_dim=10):
+class CNN:
+    def __init__(self):
         rng = np.random.RandomState(42)
-        self.w1 = rng.randn(input_dim, hidden_dim).astype(np.float32) * 0.01
-        self.b1 = np.zeros(hidden_dim, dtype=np.float32)
-        self.w2 = rng.randn(hidden_dim, output_dim).astype(np.float32) * 0.01
-        self.b2 = np.zeros(output_dim, dtype=np.float32)
+        self.conv1_w = (rng.randn(8, 1, 3, 3) * 0.1).astype(np.float32)
+        self.conv1_b = np.zeros(8, dtype=np.float32)
+        self.fc1_w = (rng.randn(64, 392) * 0.01).astype(np.float32)
+        self.fc1_b = np.zeros(64, dtype=np.float32)
+        self.fc2_w = (rng.randn(10, 64) * 0.01).astype(np.float32)
+        self.fc2_b = np.zeros(10, dtype=np.float32)
 
-    def forward(self, X):
-        self.h = np.maximum(0, X @ self.w1 + self.b1)
-        scores = self.h @ self.w2 + self.b2
-        shifted = scores - np.max(scores, axis=1, keepdims=True)
+    def _conv_forward(self, X, w, b):
+        N, C_in, H, W = X.shape
+        C_out, _, KH, KW = w.shape
+        OH = H - KH + 1
+        OW = W - KW + 1
+        out = np.zeros((N, C_out, OH, OW), dtype=np.float32)
+        for f in range(C_out):
+            for i in range(OH):
+                for j in range(OW):
+                    patch = X[:, :, i:i+KH, j:j+KW]
+                    out[:, f, i, j] = np.sum(patch * w[f], axis=(1, 2, 3)) + b[f]
+        return out
+
+    def _maxpool_forward(self, X, size=2):
+        N, C, H, W = X.shape
+        OH = H // size
+        OW = W // size
+        out = np.zeros((N, C, OH, OW), dtype=np.float32)
+        self.pool_mask = np.zeros_like(X)
+        for i in range(OH):
+            for j in range(OW):
+                patch = X[:, :, i*size:(i+1)*size, j*size:(j+1)*size]
+                idx = np.argmax(patch.reshape(N, C, -1), axis=2)
+                for n in range(N):
+                    for c in range(C):
+                        mi = i * size + idx[n, c] // size
+                        mj = j * size + idx[n, c] % size
+                        out[n, c, i, j] = X[n, c, mi, mj]
+                        self.pool_mask[n, c, mi, mj] = 1
+        return out
+
+    def forward(self, X_flat):
+        self.X_flat = X_flat
+        N = X_flat.shape[0]
+        self.X2d = X_flat.reshape(N, 1, 16, 16)
+
+        self.z1 = self._conv_forward(self.X2d, self.conv1_w, self.conv1_b)
+        self.a1 = np.maximum(0, self.z1)
+        self.p1 = self._maxpool_forward(self.a1)
+
+        self.flat = self.p1.reshape(N, -1)
+        if self.flat.shape[1] != 392:
+            self.flat = self.flat[:, :392]
+
+        self.z2 = self.flat @ self.fc1_w.T + self.fc1_b
+        self.a2 = np.maximum(0, self.z2)
+
+        self.z3 = self.a2 @ self.fc2_w.T + self.fc2_b
+        shifted = self.z3 - np.max(self.z3, axis=1, keepdims=True)
         exps = np.exp(shifted)
         self.probs = exps / np.sum(exps, axis=1, keepdims=True)
         return self.probs
 
     def loss(self, y):
         N = len(y)
-        correct_probs = self.probs[np.arange(N), y]
-        return -np.mean(np.log(correct_probs + 1e-8))
+        correct = self.probs[np.arange(N), y]
+        return -np.mean(np.log(correct + 1e-8))
 
-    def backward(self, X, y):
+    def backward(self, X_flat, y):
         N = len(y)
         dout = self.probs.copy()
         dout[np.arange(N), y] -= 1
         dout /= N
 
-        dw2 = self.h.T @ dout
-        db2 = np.sum(dout, axis=0)
-        dh = dout @ self.w2.T
-        dh[self.h <= 0] = 0
+        dfc2_w = dout.T @ self.a2
+        dfc2_b = np.sum(dout, axis=0)
 
-        dw1 = X.T @ dh
-        db1 = np.sum(dh, axis=0)
+        da2 = dout @ self.fc2_w
+        da2[self.a2 <= 0] = 0
 
-        return dw1, db1, dw2, db2
+        dfc1_w = da2.T @ self.flat
+        dfc1_b = np.sum(da2, axis=0)
+
+        dflat = da2 @ self.fc1_w
+        dp1 = dflat.reshape(self.p1.shape)
+
+        da1 = np.zeros_like(self.z1)
+        N, C, H, W = self.p1.shape
+        for i in range(H):
+            for j in range(W):
+                for n in range(N):
+                    for c in range(C):
+                        mi = i * 2
+                        mj = j * 2
+                        da1[n, c, mi, mj] = dp1[n, c, i, j] * self.pool_mask[n, c, mi, mj]
+        da1[self.z1 <= 0] = 0
+
+        dconv1_w = np.zeros_like(self.conv1_w)
+        dconv1_b = np.zeros_like(self.conv1_b)
+        OH = 14
+        for f in range(8):
+            for n in range(N):
+                for i in range(OH):
+                    for j in range(OH):
+                        patch = self.X2d[n, :, i:i+3, j:j+3]
+                        dconv1_w[f] += da1[n, f, i, j] * patch
+            dconv1_b[f] = np.sum(da1[:, f])
+
+        return dconv1_w, dconv1_b, dfc1_w, dfc1_b, dfc2_w, dfc2_b
 
 
 def augment(X, y):
@@ -74,11 +147,11 @@ def augment(X, y):
     noise = np.random.uniform(-0.02, 0.02, X_aug.shape).astype(np.float32)
     X_aug += noise
     X_aug = np.clip(X_aug, 0.0, 1.0)
-    X_aug2d = X_aug.reshape(N, 16, 16)
+    X_aug2d = X_aug.reshape(N, 1, 16, 16)
     shift_y = np.random.randint(-1, 2)
     shift_x = np.random.randint(-1, 2)
-    X_aug2d = np.roll(X_aug2d, shift_y, axis=1)
-    X_aug2d = np.roll(X_aug2d, shift_x, axis=2)
+    X_aug2d = np.roll(X_aug2d, shift_y, axis=2)
+    X_aug2d = np.roll(X_aug2d, shift_x, axis=3)
     X_aug = X_aug2d.reshape(N, 256)
     return X_aug, y
 
@@ -87,8 +160,13 @@ def train(data_dir="num_samples", epochs=800, lr=0.01, momentum=0.9):
     X, y = load_samples(data_dir)
     print(f"Loaded {len(X)} samples")
 
-    net = Net()
-    v_w1, v_b1, v_w2, v_b2 = 0, 0, 0, 0
+    net = CNN()
+    v_cw1 = np.zeros_like(net.conv1_w)
+    v_cb1 = np.zeros_like(net.conv1_b)
+    v_fw1 = np.zeros_like(net.fc1_w)
+    v_fb1 = np.zeros_like(net.fc1_b)
+    v_fw2 = np.zeros_like(net.fc2_w)
+    v_fb2 = np.zeros_like(net.fc2_b)
 
     for epoch in range(epochs):
         if epoch > 0 and epoch % 200 == 0:
@@ -99,22 +177,26 @@ def train(data_dir="num_samples", epochs=800, lr=0.01, momentum=0.9):
         net.forward(X_batch)
         loss_val = net.loss(y_batch)
 
-        dw1, db1, dw2, db2 = net.backward(X_batch, y_batch)
+        grads = net.backward(X_batch, y_batch)
+        dcw, dcb, dfw1, dfb1, dfw2, dfb2 = grads
 
-        # L2 regularization
-        dw2 += 0.001 * net.w2
-        dw1 += 0.001 * net.w1
+        dcw += 0.001 * net.conv1_w
+        dfw1 += 0.001 * net.fc1_w
+        dfw2 += 0.001 * net.fc2_w
 
-        # Momentum update
-        v_w2 = momentum * v_w2 - lr * dw2
-        v_b2 = momentum * v_b2 - lr * db2
-        v_w1 = momentum * v_w1 - lr * dw1
-        v_b1 = momentum * v_b1 - lr * db1
+        v_cw1 = momentum * v_cw1 - lr * dcw
+        v_cb1 = momentum * v_cb1 - lr * dcb
+        v_fw1 = momentum * v_fw1 - lr * dfw1
+        v_fb1 = momentum * v_fb1 - lr * dfb1
+        v_fw2 = momentum * v_fw2 - lr * dfw2
+        v_fb2 = momentum * v_fb2 - lr * dfb2
 
-        net.w2 += v_w2
-        net.b2 += v_b2
-        net.w1 += v_w1
-        net.b1 += v_b1
+        net.conv1_w += v_cw1
+        net.conv1_b += v_cb1
+        net.fc1_w += v_fw1
+        net.fc1_b += v_fb1
+        net.fc2_w += v_fw2
+        net.fc2_b += v_fb2
 
         if epoch % 50 == 0:
             preds = np.argmax(net.probs, axis=1)
@@ -126,10 +208,13 @@ def train(data_dir="num_samples", epochs=800, lr=0.01, momentum=0.9):
 
 def save_weights(net, path="num_weights.json"):
     w = {
-        "w1": net.w1.T.tolist(),
-        "b1": net.b1.tolist(),
-        "w2": net.w2.T.tolist(),
-        "b2": net.b2.tolist(),
+        "conv1_w": net.conv1_w.tolist(),
+        "conv1_b": net.conv1_b.tolist(),
+        "fc1_w": net.fc1_w.tolist(),
+        "fc1_b": net.fc1_b.tolist(),
+        "fc2_w": net.fc2_w.tolist(),
+        "fc2_b": net.fc2_b.tolist(),
+        "arch": "cnn",
     }
     with open(path, "w", encoding="utf-8") as f:
         json.dump(w, f, separators=(",", ":"))
@@ -139,9 +224,6 @@ def save_weights(net, path="num_weights.json"):
 
 def collect_samples(screenshot_path, config_path="num_config.json", output_dir="num_samples"):
     """Collect raw digit crops from a screenshot for later manual sorting.
-
-    Crops are saved to output_dir/ as {region_name}.png.
-    User should then sort them into output_dir/0/ ... output_dir/9/ by digit label.
 
     Supports new config format with "targets" and "grid" blocks.
     Each grid cell is saved and also split into left/right halves for individual digits.

@@ -29,11 +29,86 @@ def load_weights(path="num_weights.json"):
             ) from e
 
 
+def _conv2d_single(x_2d, filters_4d, biases):
+    C_out = len(filters_4d)
+    KH = len(filters_4d[0][0])
+    KW = len(filters_4d[0][0][0])
+    H = len(x_2d)
+    W = len(x_2d[0])
+    OH = H - KH + 1
+    OW = W - KW + 1
+    out = []
+    for f in range(C_out):
+        chan = []
+        for i in range(OH):
+            row = []
+            for j in range(OW):
+                s = biases[f]
+                for ki in range(KH):
+                    for kj in range(KW):
+                        s += filters_4d[f][0][ki][kj] * x_2d[i + ki][j + kj]
+                row.append(s)
+            chan.append(row)
+        out.append(chan)
+    return out
+
+
+def _maxpool2d(x_chw, size=2):
+    C = len(x_chw)
+    OH = len(x_chw[0]) // size
+    OW = len(x_chw[0][0]) // size
+    out = []
+    for c in range(C):
+        chan = []
+        for i in range(OH):
+            row = []
+            for j in range(OW):
+                m = x_chw[c][i * size][j * size]
+                for di in range(size):
+                    for dj in range(size):
+                        v = x_chw[c][i * size + di][j * size + dj]
+                        if v > m:
+                            m = v
+                row.append(m)
+            chan.append(row)
+        out.append(chan)
+    return out
+
+
 def _dot(a, b):
     return sum(ai * bi for ai, bi in zip(a, b))
 
 
-def forward(x, w1, b1, w2, b2):
+def forward_cnn(x_flat, w):
+    x_2d = [x_flat[i * 16:(i + 1) * 16] for i in range(16)]
+
+    conv_out = _conv2d_single(x_2d, w["conv1_w"], w["conv1_b"])
+    for f in range(len(conv_out)):
+        for i in range(len(conv_out[f])):
+            for j in range(len(conv_out[f][i])):
+                conv_out[f][i][j] = max(0.0, conv_out[f][i][j])
+
+    pooled = _maxpool2d(conv_out, size=2)
+    flat = []
+    for c in range(len(pooled)):
+        for i in range(len(pooled[c])):
+            flat.extend(pooled[c][i])
+
+    fc1_out_size = len(w["fc1_b"])
+    h1 = [max(0.0, _dot(flat, w["fc1_w"][i]) + w["fc1_b"][i])
+           for i in range(fc1_out_size)]
+
+    fc2_out_size = len(w["fc2_b"])
+    scores = [_dot(h1, w["fc2_w"][i]) + w["fc2_b"][i]
+              for i in range(fc2_out_size)]
+    max_s = max(scores)
+    exps = [math.exp(s - max_s) for s in scores]
+    total = sum(exps)
+    probs = [e / total for e in exps]
+    return probs.index(max(probs))
+
+
+def forward_mlp(x, w1, b1, w2, b2):
     h = [max(0, _dot(x, row) + b1[i]) for i, row in enumerate(w1)]
     y = [_dot(h, row) + b2[i] for i, row in enumerate(w2)]
     max_y = max(y)
@@ -68,6 +143,17 @@ def _get_weights():
     return _weights
 
 
+def _is_cnn(w):
+    return w.get("arch") == "cnn"
+
+
+def _forward(x, w):
+    if _is_cnn(w):
+        return forward_cnn(x, w)
+    else:
+        return forward_mlp(x, w["w1"], w["b1"], w["w2"], w["b2"])
+
+
 def recognize(screenshot, config):
     if not config:
         return {}
@@ -92,7 +178,7 @@ def recognize(screenshot, config):
 
         if digits == 1:
             vec = preprocess(crop)
-            idx = forward(vec, w["w1"], w["b1"], w["w2"], w["b2"])
+            idx = _forward(vec, w)
             result[name] = str(idx)
         elif digits == 2:
             cw = crop.size[0]
@@ -103,8 +189,8 @@ def recognize(screenshot, config):
             right = crop.crop((half, 0, cw, crop.size[1]))
             lv = preprocess(left)
             rv = preprocess(right)
-            l_idx = forward(lv, w["w1"], w["b1"], w["w2"], w["b2"])
-            r_idx = forward(rv, w["w1"], w["b1"], w["w2"], w["b2"])
+            l_idx = _forward(lv, w)
+            r_idx = _forward(rv, w)
             result[name] = f"{l_idx}{r_idx}"
         else:
             print(f"[find_num] unsupported digits={digits} for region: {name}")
@@ -147,8 +233,8 @@ def grid_recognize(screenshot, grid_config):
 
             lv = preprocess(left)
             rv = preprocess(right)
-            l_idx = forward(lv, w["w1"], w["b1"], w["w2"], w["b2"])
-            r_idx = forward(rv, w["w1"], w["b1"], w["w2"], w["b2"])
+            l_idx = _forward(lv, w)
+            r_idx = _forward(rv, w)
             row_data.append(f"{l_idx}{r_idx}")
         result.append(row_data)
     return result
