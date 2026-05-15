@@ -30,6 +30,32 @@ def load_samples(data_dir="num_samples"):
     return np.array(X)[indices], np.array(y)[indices]
 
 
+def load_mnist(npz_path="mnist.npz", sample_per_class=2000):
+    data = np.load(npz_path)
+    X_raw = data["x_train"].astype(np.float32) / 255.0
+    y_raw = data["y_train"]
+    data.close()
+
+    X_out, y_out = [], []
+    rng = np.random.RandomState(42)
+    for label in range(10):
+        idx = np.where(y_raw == label)[0]
+        take = min(sample_per_class, len(idx))
+        chosen = rng.choice(idx, take, replace=False)
+        for i in chosen:
+            img = Image.fromarray((X_raw[i] * 255).astype(np.uint8), mode="L")
+            img = img.resize((16, 16), Image.Resampling.LANCZOS)
+            pixels = np.asarray(img, dtype=np.float32).ravel() / 255.0
+            X_out.append(pixels)
+            y_out.append(label)
+
+    X_arr = np.array(X_out, dtype=np.float32)
+    y_arr = np.array(y_out, dtype=np.int64)
+    rng2 = np.random.RandomState(123)
+    indices = rng2.permutation(len(X_arr))
+    return X_arr[indices], y_arr[indices]
+
+
 def _im2col(X, KH, KW, stride=1):
     N, C, H, W = X.shape
     OH = (H - KH) // stride + 1
@@ -138,24 +164,39 @@ class CNN:
         return dconv1_w, dconv1_b, dfc1_w, dfc1_b, dfc2_w, dfc2_b
 
 
-def augment(X, y):
+def augment_strong(X, y):
     N = X.shape[0]
     X_aug = X.copy()
-    noise = np.random.uniform(-0.02, 0.02, X_aug.shape).astype(np.float32)
+    noise = np.random.uniform(-0.03, 0.03, X_aug.shape).astype(np.float32)
     X_aug += noise
     X_aug = np.clip(X_aug, 0.0, 1.0)
     X_aug2d = X_aug.reshape(N, 1, 16, 16)
-    shift_y = np.random.randint(-1, 2)
-    shift_x = np.random.randint(-1, 2)
+    shift_y = np.random.randint(-2, 3)
+    shift_x = np.random.randint(-2, 3)
     X_aug2d = np.roll(X_aug2d, shift_y, axis=2)
     X_aug2d = np.roll(X_aug2d, shift_x, axis=3)
     X_aug = X_aug2d.reshape(N, 256)
     return X_aug, y
 
 
-def train(data_dir="num_samples", epochs=800, lr=0.01, momentum=0.9):
-    X, y = load_samples(data_dir)
-    print(f"Loaded {len(X)} samples")
+def augment_light(X):
+    noise = np.random.uniform(-0.01, 0.01, X.shape).astype(np.float32)
+    X = X + noise
+    return np.clip(X, 0.0, 1.0)
+
+
+def train(data_dir="num_samples", mnist_path="mnist.npz", epochs=600, lr=0.01, momentum=0.9):
+    X_game, y_game = load_samples(data_dir)
+    print(f"Loaded {len(X_game)} game samples from {data_dir}")
+
+    use_mnist = os.path.exists(mnist_path)
+    if use_mnist:
+        X_mnist, y_mnist = load_mnist(mnist_path)
+        print(f"Loaded {len(X_mnist)} MNIST samples from {mnist_path}")
+        mnist_per_epoch = min(3000, len(X_mnist))
+    else:
+        print(f"[warn] {mnist_path} not found, training with game samples only")
+        X_mnist, y_mnist = None, None
 
     net = CNN()
     v_cw = np.zeros_like(net.conv1_w)
@@ -169,7 +210,21 @@ def train(data_dir="num_samples", epochs=800, lr=0.01, momentum=0.9):
         if epoch > 0 and epoch % 200 == 0:
             lr *= 0.5
 
-        X_batch, y_batch = augment(X, y)
+        X_game_aug, y_game_aug = augment_strong(X_game, y_game)
+
+        if use_mnist:
+            epoch_rng = np.random.RandomState(epoch)
+            idx = epoch_rng.choice(len(X_mnist), mnist_per_epoch, replace=False)
+            X_mnist_batch, y_mnist_batch = X_mnist[idx], y_mnist[idx]
+            X_mnist_batch = augment_light(X_mnist_batch)
+
+            X_batch = np.vstack([X_game_aug, X_mnist_batch])
+            y_batch = np.hstack([y_game_aug, y_mnist_batch])
+            perm = epoch_rng.permutation(len(X_batch))
+            X_batch = X_batch[perm]
+            y_batch = y_batch[perm]
+        else:
+            X_batch, y_batch = X_game_aug, y_game_aug
 
         net.forward(X_batch)
         loss_val = net.loss(y_batch)
