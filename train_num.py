@@ -30,59 +30,60 @@ def load_samples(data_dir="num_samples"):
     return np.array(X)[indices], np.array(y)[indices]
 
 
+def _im2col(X, KH, KW, stride=1):
+    N, C, H, W = X.shape
+    OH = (H - KH) // stride + 1
+    OW = (W - KW) // stride + 1
+    cols = np.zeros((N, C * KH * KW, OH * OW), dtype=np.float32)
+    for i in range(OH):
+        for j in range(OW):
+            patch = X[:, :, i:i+KH, j:j+KW]
+            cols[:, :, i * OW + j] = patch.reshape(N, -1)
+    return cols, OH, OW
+
+
+def _col2im(cols, X_shape, KH, KW, stride=1):
+    N, C, H, W = X_shape
+    OH = (H - KH) // stride + 1
+    OW = (W - KW) // stride + 1
+    X = np.zeros(X_shape, dtype=np.float32)
+    for i in range(OH):
+        for j in range(OW):
+            patch = cols[:, :, i * OW + j].reshape(N, C, KH, KW)
+            X[:, :, i:i+KH, j:j+KW] += patch
+    return X
+
+
 class CNN:
     def __init__(self):
         rng = np.random.RandomState(42)
-        self.conv1_w = (rng.randn(8, 1, 3, 3) * 0.1).astype(np.float32)
+        self.conv1_w = (rng.randn(8, 1, 3, 3) * np.sqrt(2.0 / (1 * 3 * 3))).astype(np.float32)
         self.conv1_b = np.zeros(8, dtype=np.float32)
-        self.fc1_w = (rng.randn(64, 392) * 0.01).astype(np.float32)
+        fc1_in = 8 * 7 * 7
+        self.fc1_w = (rng.randn(64, fc1_in) * np.sqrt(2.0 / fc1_in)).astype(np.float32)
         self.fc1_b = np.zeros(64, dtype=np.float32)
-        self.fc2_w = (rng.randn(10, 64) * 0.01).astype(np.float32)
+        self.fc2_w = (rng.randn(10, 64) * np.sqrt(2.0 / 64)).astype(np.float32)
         self.fc2_b = np.zeros(10, dtype=np.float32)
 
-    def _conv_forward(self, X, w, b):
-        N, C_in, H, W = X.shape
-        C_out, _, KH, KW = w.shape
-        OH = H - KH + 1
-        OW = W - KW + 1
-        out = np.zeros((N, C_out, OH, OW), dtype=np.float32)
-        for f in range(C_out):
-            for i in range(OH):
-                for j in range(OW):
-                    patch = X[:, :, i:i+KH, j:j+KW]
-                    out[:, f, i, j] = np.sum(patch * w[f], axis=(1, 2, 3)) + b[f]
-        return out
-
-    def _maxpool_forward(self, X, size=2):
-        N, C, H, W = X.shape
-        OH = H // size
-        OW = W // size
-        out = np.zeros((N, C, OH, OW), dtype=np.float32)
-        self.pool_mask = np.zeros_like(X)
-        for i in range(OH):
-            for j in range(OW):
-                patch = X[:, :, i*size:(i+1)*size, j*size:(j+1)*size]
-                idx = np.argmax(patch.reshape(N, C, -1), axis=2)
-                for n in range(N):
-                    for c in range(C):
-                        mi = i * size + idx[n, c] // size
-                        mj = j * size + idx[n, c] % size
-                        out[n, c, i, j] = X[n, c, mi, mj]
-                        self.pool_mask[n, c, mi, mj] = 1
-        return out
-
     def forward(self, X_flat):
-        self.X_flat = X_flat
         N = X_flat.shape[0]
         self.X2d = X_flat.reshape(N, 1, 16, 16)
 
-        self.z1 = self._conv_forward(self.X2d, self.conv1_w, self.conv1_b)
+        self.cols1, OH1, OW1 = _im2col(self.X2d, 3, 3)
+        w1_row = self.conv1_w.reshape(8, -1)
+        conv1_out = w1_row @ self.cols1 + self.conv1_b.reshape(8, 1)
+        self.z1 = conv1_out.reshape(N, 8, OH1, OW1)
         self.a1 = np.maximum(0, self.z1)
-        self.p1 = self._maxpool_forward(self.a1)
+
+        N2, C2, H2, W2_ = self.a1.shape
+        a1_6d = self.a1.reshape(N2, C2, H2 // 2, 2, W2_ // 2, 2)
+        self.p1 = a1_6d.max(axis=3).max(axis=4)
+        a1_flat = a1_6d.reshape(N2, C2, H2 // 2, 2, W2_ // 2 * 2)
+        self.p1_idx = a1_flat.argmax(axis=3)
 
         self.flat = self.p1.reshape(N, -1)
-        if self.flat.shape[1] != 392:
-            self.flat = self.flat[:, :392]
+        if self.flat.shape[1] != 8 * 7 * 7:
+            self.flat = self.flat[:, :8 * 7 * 7]
 
         self.z2 = self.flat @ self.fc1_w.T + self.fc1_b
         self.a2 = np.maximum(0, self.z2)
@@ -116,27 +117,25 @@ class CNN:
         dflat = da2 @ self.fc1_w
         dp1 = dflat.reshape(self.p1.shape)
 
-        da1 = np.zeros_like(self.z1)
-        N, C, H, W = self.p1.shape
-        for i in range(H):
-            for j in range(W):
-                for n in range(N):
-                    for c in range(C):
-                        mi = i * 2
-                        mj = j * 2
-                        da1[n, c, mi, mj] = dp1[n, c, i, j] * self.pool_mask[n, c, mi, mj]
+        da1 = np.zeros_like(self.a1)
+        N2, C2, H2, W2_ = self.a1.shape
+        pH, pW = H2 // 2, W2_ // 2
+        for i in range(pH):
+            for j in range(pW):
+                idx = self.p1_idx[:, :, i, j]
+                for n in range(N2):
+                    for c in range(C2):
+                        mi = 2 * i + (idx[n, c] // 2)
+                        mj = 2 * j + (idx[n, c] % 2)
+                        da1[n, c, mi, mj] += dp1[n, c, i, j]
         da1[self.z1 <= 0] = 0
 
-        dconv1_w = np.zeros_like(self.conv1_w)
-        dconv1_b = np.zeros_like(self.conv1_b)
-        OH = 14
-        for f in range(8):
-            for n in range(N):
-                for i in range(OH):
-                    for j in range(OH):
-                        patch = self.X2d[n, :, i:i+3, j:j+3]
-                        dconv1_w[f] += da1[n, f, i, j] * patch
-            dconv1_b[f] = np.sum(da1[:, f])
+        dconv1_cols = da1.reshape(N, 8, -1)
+        w1_row = self.conv1_w.reshape(8, -1)
+        dcols = w1_row.T @ dconv1_cols
+
+        dconv1_w = (dconv1_cols @ self.cols1.transpose(0, 2, 1).reshape(-1, self.cols1.shape[1])).reshape(8, 1, 3, 3).sum(axis=0, keepdims=True).reshape(8, 1, 3, 3)
+        dconv1_b = np.sum(da1.reshape(N, 8, -1), axis=(0, 2))
 
         return dconv1_w, dconv1_b, dfc1_w, dfc1_b, dfc2_w, dfc2_b
 
@@ -161,12 +160,12 @@ def train(data_dir="num_samples", epochs=800, lr=0.01, momentum=0.9):
     print(f"Loaded {len(X)} samples")
 
     net = CNN()
-    v_cw1 = np.zeros_like(net.conv1_w)
-    v_cb1 = np.zeros_like(net.conv1_b)
-    v_fw1 = np.zeros_like(net.fc1_w)
-    v_fb1 = np.zeros_like(net.fc1_b)
-    v_fw2 = np.zeros_like(net.fc2_w)
-    v_fb2 = np.zeros_like(net.fc2_b)
+    v_cw = np.zeros_like(net.conv1_w)
+    v_cb = np.zeros_like(net.conv1_b)
+    v_f1w = np.zeros_like(net.fc1_w)
+    v_f1b = np.zeros_like(net.fc1_b)
+    v_f2w = np.zeros_like(net.fc2_w)
+    v_f2b = np.zeros_like(net.fc2_b)
 
     for epoch in range(epochs):
         if epoch > 0 and epoch % 200 == 0:
@@ -178,25 +177,25 @@ def train(data_dir="num_samples", epochs=800, lr=0.01, momentum=0.9):
         loss_val = net.loss(y_batch)
 
         grads = net.backward(X_batch, y_batch)
-        dcw, dcb, dfw1, dfb1, dfw2, dfb2 = grads
+        dcw, dcb, df1w, df1b, df2w, df2b = grads
 
         dcw += 0.001 * net.conv1_w
-        dfw1 += 0.001 * net.fc1_w
-        dfw2 += 0.001 * net.fc2_w
+        df1w += 0.001 * net.fc1_w
+        df2w += 0.001 * net.fc2_w
 
-        v_cw1 = momentum * v_cw1 - lr * dcw
-        v_cb1 = momentum * v_cb1 - lr * dcb
-        v_fw1 = momentum * v_fw1 - lr * dfw1
-        v_fb1 = momentum * v_fb1 - lr * dfb1
-        v_fw2 = momentum * v_fw2 - lr * dfw2
-        v_fb2 = momentum * v_fb2 - lr * dfb2
+        v_cw = momentum * v_cw - lr * dcw
+        v_cb = momentum * v_cb - lr * dcb
+        v_f1w = momentum * v_f1w - lr * df1w
+        v_f1b = momentum * v_f1b - lr * df1b
+        v_f2w = momentum * v_f2w - lr * df2w
+        v_f2b = momentum * v_f2b - lr * df2b
 
-        net.conv1_w += v_cw1
-        net.conv1_b += v_cb1
-        net.fc1_w += v_fw1
-        net.fc1_b += v_fb1
-        net.fc2_w += v_fw2
-        net.fc2_b += v_fb2
+        net.conv1_w += v_cw
+        net.conv1_b += v_cb
+        net.fc1_w += v_f1w
+        net.fc1_b += v_f1b
+        net.fc2_w += v_f2w
+        net.fc2_b += v_f2b
 
         if epoch % 50 == 0:
             preds = np.argmax(net.probs, axis=1)
@@ -223,11 +222,6 @@ def save_weights(net, path="num_weights.json"):
 
 
 def collect_samples(screenshot_path, config_path="num_config.json", output_dir="num_samples"):
-    """Collect raw digit crops from a screenshot for later manual sorting.
-
-    Supports new config format with "targets" and "grid" blocks.
-    Each grid cell is saved and also split into left/right halves for individual digits.
-    """
     import sys
     sys.path.insert(0, os.path.dirname(__file__))
     from find_num import load_config
