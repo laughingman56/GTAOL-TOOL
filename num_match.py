@@ -15,6 +15,9 @@ def capturar_tela():
 
 
 def mover_cursor(dr, dc):
+    pydirectinput.PAUSE = 0.02
+    pydirectinput.FAILSAFE = False
+
     if dr > 0:
         pydirectinput.press("down", presses=dr, interval=DELAY)
     elif dr < 0:
