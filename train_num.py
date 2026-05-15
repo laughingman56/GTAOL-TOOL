@@ -20,7 +20,7 @@ def load_samples(data_dir="num_samples"):
                 print(f"  [warn] skipping corrupted image: {fpath}")
                 continue
             img = img.resize((16, 16), Image.Resampling.LANCZOS)
-            pixels = np.array(img.getdata(), dtype=np.float32) / 255.0
+            pixels = np.array(list(img.getdata()), dtype=np.float32) / 255.0
             X.append(pixels)
             y.append(label)
     if not X:
