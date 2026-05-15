@@ -5,12 +5,12 @@ import numpy as np
 def test_forward_mlp():
     from find_num import forward_mlp
 
-    w1 = [[0.1] * 256 for _ in range(32)]
+    w1 = [[0.1] * 576 for _ in range(32)]
     b1 = [0.0] * 32
     w2 = [[0.1] * 32 for _ in range(10)]
     b2 = [0.0] * 10
 
-    x = [0.5] * 256
+    x = [0.5] * 576
     result = forward_mlp(x, w1, b1, w2, b2)
 
     assert 0 <= result <= 9, f"Expected 0-9, got {result}"
@@ -30,8 +30,7 @@ def test_forward_cnn():
 
     conv1_w = [[[[0.1] * 3 for _ in range(3)] for _ in range(1)] for _ in range(8)]
     conv1_b = [0.0] * 8
-    pool_size = 2
-    fc1_in = 8 * 7 * 7
+    fc1_in = 8 * 11 * 11
     fc1_w = [[0.01] * fc1_in for _ in range(64)]
     fc1_b = [0.0] * 64
     fc2_w = [[0.0] * 64 for _ in range(10)]
@@ -48,7 +47,7 @@ def test_forward_cnn():
         "fc2_b": fc2_b,
         "arch": "cnn",
     }
-    x = [0.5] * 256
+    x = [0.5] * 576
     result = forward_cnn(x, w)
     assert 0 <= result <= 9, f"Expected 0-9, got {result}"
     print("  PASS test_forward_cnn_bound")
@@ -145,20 +144,20 @@ from PIL import Image
 def test_preprocess():
     from find_num import preprocess
 
-    img = Image.new("L", (16, 16), color=255)
+    img = Image.new("L", (24, 24), color=255)
     vec = preprocess(img)
-    assert len(vec) == 256, f"Expected 256, got {len(vec)}"
+    assert len(vec) == 576, f"Expected 576, got {len(vec)}"
     assert all(abs(v - 1.0) < 0.01 for v in vec), "White should normalize to ~1.0"
     print("  PASS test_preprocess_white")
 
-    img2 = Image.new("L", (16, 16), color=0)
+    img2 = Image.new("L", (24, 24), color=0)
     vec2 = preprocess(img2)
     assert all(abs(v) < 0.01 for v in vec2), "Black should normalize to ~0.0"
     print("  PASS test_preprocess_black")
 
     img3 = Image.new("L", (32, 32), color=128)
     vec3 = preprocess(img3)
-    assert len(vec3) == 256, f"Expected 256 after resize, got {len(vec3)}"
+    assert len(vec3) == 576, f"Expected 576 after resize, got {len(vec3)}"
     print("  PASS test_preprocess_resize")
 
 
@@ -188,7 +187,7 @@ def test_recognize_single_digit_mlp():
     from find_num import _set_weights, recognize
 
     mock_weights = {
-        "w1": [[0.01] * 256 for _ in range(32)],
+        "w1": [[0.01] * 576 for _ in range(32)],
         "b1": [0.0] * 32,
         "w2": [[0.0] * 32 for _ in range(10)],
         "b2": [0.0] * 10
@@ -217,7 +216,7 @@ def test_recognize_two_digit_mlp():
     from find_num import _set_weights, recognize
 
     mock_weights = {
-        "w1": [[0.01] * 256 for _ in range(32)],
+        "w1": [[0.01] * 576 for _ in range(32)],
         "b1": [0.0] * 32,
         "w2": [[0.0] * 32 for _ in range(10)],
         "b2": [0.0] * 10
@@ -249,7 +248,7 @@ def test_recognize_out_of_bounds():
     from find_num import _set_weights, recognize
 
     mock_weights = {
-        "w1": [[0.01] * 256 for _ in range(32)],
+        "w1": [[0.01] * 576 for _ in range(32)],
         "b1": [0.0] * 32,
         "w2": [[0.0] * 32 for _ in range(10)],
         "b2": [0.0] * 10
@@ -279,7 +278,7 @@ def test_recognize_missing_field():
     from find_num import _set_weights, recognize
 
     mock_weights = {
-        "w1": [[0.01] * 256 for _ in range(32)],
+        "w1": [[0.01] * 576 for _ in range(32)],
         "b1": [0.0] * 32,
         "w2": [[0.0] * 32 for _ in range(10)],
         "b2": [0.0] * 10
@@ -298,7 +297,7 @@ def test_recognize_negative_coords():
     from find_num import _set_weights, recognize
 
     mock_weights = {
-        "w1": [[0.01] * 256 for _ in range(32)],
+        "w1": [[0.01] * 576 for _ in range(32)],
         "b1": [0.0] * 32,
         "w2": [[0.0] * 32 for _ in range(10)],
         "b2": [0.0] * 10
@@ -317,7 +316,7 @@ def test_recognize_unsupported_digits():
     from find_num import _set_weights, recognize
 
     mock_weights = {
-        "w1": [[0.01] * 256 for _ in range(32)],
+        "w1": [[0.01] * 576 for _ in range(32)],
         "b1": [0.0] * 32,
         "w2": [[0.0] * 32 for _ in range(10)],
         "b2": [0.0] * 10
@@ -348,7 +347,7 @@ def test_end_to_end_mlp():
             noise = noise_rng.randint(-30, 30, (20, 20), dtype=np.int16)
             arr = np.clip(base + noise, 0, 255).astype(np.uint8)
             img = Image.fromarray(arr, mode="L")
-            vec = preprocess(img)
+            vec = preprocess(img, size=16)  # MLP uses 16x16
             samples.append((vec, digit))
 
     X = np.array([s[0] for s in samples], dtype=np.float32)

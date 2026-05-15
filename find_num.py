@@ -80,7 +80,8 @@ def _dot(a, b):
 
 
 def forward_cnn(x_flat, w):
-    x_2d = [x_flat[i * 16:(i + 1) * 16] for i in range(16)]
+    IMG_SIZE = int(math.sqrt(len(x_flat)))
+    x_2d = [x_flat[i * IMG_SIZE:(i + 1) * IMG_SIZE] for i in range(IMG_SIZE)]
 
     conv_out = _conv2d_single(x_2d, w["conv1_w"], w["conv1_b"])
     for f in range(len(conv_out)):
@@ -121,7 +122,7 @@ def forward_mlp(x, w1, b1, w2, b2):
 from PIL import Image
 
 
-def preprocess(image, size=16):
+def preprocess(image, size=24):
     img = image.convert("L")
     img = img.resize((size, size), Image.Resampling.LANCZOS)
     pixels = list(img.tobytes())

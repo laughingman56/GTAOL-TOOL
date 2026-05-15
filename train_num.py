@@ -19,7 +19,7 @@ def load_samples(data_dir="num_samples"):
             except Exception:
                 print(f"  [warn] skipping corrupted image: {fpath}")
                 continue
-            img = img.resize((16, 16), Image.Resampling.LANCZOS)
+            img = img.resize((24, 24), Image.Resampling.LANCZOS)
             pixels = np.asarray(img, dtype=np.float32).ravel() / 255.0
             X.append(pixels)
             y.append(label)
@@ -44,7 +44,7 @@ def load_mnist(npz_path="mnist.npz", sample_per_class=2000):
         chosen = rng.choice(idx, take, replace=False)
         for i in chosen:
             img = Image.fromarray((X_raw[i] * 255).astype(np.uint8), mode="L")
-            img = img.resize((16, 16), Image.Resampling.LANCZOS)
+            img = img.resize((24, 24), Image.Resampling.LANCZOS)
             pixels = np.asarray(img, dtype=np.float32).ravel() / 255.0
             X_out.append(pixels)
             y_out.append(label)
@@ -85,7 +85,7 @@ class CNN:
         rng = np.random.RandomState(42)
         self.conv1_w = (rng.randn(8, 1, 3, 3) * np.sqrt(2.0 / (1 * 3 * 3))).astype(np.float32)
         self.conv1_b = np.zeros(8, dtype=np.float32)
-        fc1_in = 8 * 7 * 7
+        fc1_in = 8 * 11 * 11
         self.fc1_w = (rng.randn(64, fc1_in) * np.sqrt(2.0 / fc1_in)).astype(np.float32)
         self.fc1_b = np.zeros(64, dtype=np.float32)
         self.fc2_w = (rng.randn(10, 64) * np.sqrt(2.0 / 64)).astype(np.float32)
@@ -103,7 +103,7 @@ class CNN:
 
     def forward(self, X_flat):
         N = X_flat.shape[0]
-        self.X2d = X_flat.reshape(N, 1, 16, 16)
+        self.X2d = X_flat.reshape(N, 1, 24, 24)
 
         self.cols1, OH1, OW1 = _im2col(self.X2d, 3, 3)
         w1_row = self.conv1_w.reshape(8, -1)
@@ -118,8 +118,8 @@ class CNN:
         self.p1_idx = a1_flat.argmax(axis=3)
 
         self.flat = self.p1.reshape(N, -1)
-        if self.flat.shape[1] != 8 * 7 * 7:
-            self.flat = self.flat[:, :8 * 7 * 7]
+        if self.flat.shape[1] != 8 * 11 * 11:
+            self.flat = self.flat[:, :8 * 11 * 11]
 
         self.z2 = self.flat @ self.fc1_w.T + self.fc1_b
         self.a2 = np.maximum(0, self.z2)
@@ -180,12 +180,12 @@ def augment_strong(X, y):
     noise = np.random.uniform(-0.03, 0.03, X_aug.shape).astype(np.float32)
     X_aug += noise
     X_aug = np.clip(X_aug, 0.0, 1.0)
-    X_aug2d = X_aug.reshape(N, 1, 16, 16)
+    X_aug2d = X_aug.reshape(N, 1, 24, 24)
     shift_y = np.random.randint(-2, 3)
     shift_x = np.random.randint(-2, 3)
     X_aug2d = np.roll(X_aug2d, shift_y, axis=2)
     X_aug2d = np.roll(X_aug2d, shift_x, axis=3)
-    X_aug = X_aug2d.reshape(N, 256)
+    X_aug = X_aug2d.reshape(N, 576)
     return X_aug, y
 
 
@@ -290,7 +290,7 @@ def pretrain_mnist(mnist_path="mnist.npz", epochs=300, lr=0.01, momentum=0.9):
 
         epoch_rng = np.random.RandomState(epoch)
         idx = epoch_rng.choice(len(X_all), 4000, replace=False)
-        X_batch = X_all[idx] + np.random.uniform(-0.02, 0.02, (4000, 256)).astype(np.float32)
+        X_batch = X_all[idx] + np.random.uniform(-0.02, 0.02, (4000, 576)).astype(np.float32)
         X_batch = np.clip(X_batch, 0.0, 1.0)
         y_batch = y_all[idx]
 
