@@ -139,9 +139,12 @@ def save_weights(net, path="num_weights.json"):
 
 def collect_samples(screenshot_path, config_path="num_config.json", output_dir="num_samples"):
     """Collect raw digit crops from a screenshot for later manual sorting.
-    
+
     Crops are saved to output_dir/ as {region_name}.png.
     User should then sort them into output_dir/0/ ... output_dir/9/ by digit label.
+
+    Supports new config format with "targets" and "grid" blocks.
+    Each grid cell is saved and also split into left/right halves for individual digits.
     """
     import sys
     sys.path.insert(0, os.path.dirname(__file__))
@@ -151,19 +154,55 @@ def collect_samples(screenshot_path, config_path="num_config.json", output_dir="
     config = load_config(config_path)
     os.makedirs(output_dir, exist_ok=True)
 
-    for name, region in config.items():
+    targets_cfg = config.get("targets", {})
+    grid_cfg = config.get("grid", {})
+
+    for name, region in targets_cfg.items():
         x1 = region.get("x1")
         y1 = region.get("y1")
         x2 = region.get("x2")
         y2 = region.get("y2")
         if None in (x1, y1, x2, y2):
-            print(f"  [warn] missing coords for region: {name}")
+            print(f"  [warn] missing coords for target: {name}")
             continue
         crop = screenshot.crop((x1, y1, x2, y2))
-        fname = f"{name}.png"
-        fpath = os.path.join(output_dir, fname)
+        fpath = os.path.join(output_dir, f"{name}.png")
         crop.save(fpath)
         print(f"Saved {fpath}")
+
+        mid_x = x1 + (x2 - x1) // 2
+        left = screenshot.crop((x1, y1, mid_x, y2))
+        right = screenshot.crop((mid_x, y1, x2, y2))
+        left.save(os.path.join(output_dir, f"{name}_L.png"))
+        right.save(os.path.join(output_dir, f"{name}_R.png"))
+        print(f"Saved {name}_L.png, {name}_R.png")
+
+    if grid_cfg:
+        gx = grid_cfg["x"]
+        gy = grid_cfg["y"]
+        cw = grid_cfg["cell_w"]
+        ch = grid_cfg["cell_h"]
+        cols = grid_cfg["cols"]
+        rows = grid_cfg["rows"]
+
+        for r in range(rows):
+            for c in range(cols):
+                x1 = gx + c * cw
+                y1 = gy + r * ch
+                x2 = x1 + cw
+                y2 = y1 + ch
+
+                crop = screenshot.crop((x1, y1, x2, y2))
+                fpath = os.path.join(output_dir, f"cell_{r}_{c}.png")
+                crop.save(fpath)
+                print(f"Saved {fpath}")
+
+                mid_x = x1 + cw // 2
+                left = screenshot.crop((x1, y1, mid_x, y2))
+                right = screenshot.crop((mid_x, y1, x2, y2))
+                left.save(os.path.join(output_dir, f"cell_{r}_{c}_L.png"))
+                right.save(os.path.join(output_dir, f"cell_{r}_{c}_R.png"))
+                print(f"Saved cell_{r}_{c}_L.png, cell_{r}_{c}_R.png")
 
 
 if __name__ == "__main__":
