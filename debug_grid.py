@@ -69,9 +69,10 @@ def draw_debug(screenshot_path, config_path="num_config.json", output_path="debu
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python debug_grid.py <screenshot.png> [config.json]")
-        sys.exit(1)
-    shot = sys.argv[1]
-    cfg = sys.argv[2] if len(sys.argv) > 2 else "num_config.json"
+    if len(sys.argv) >= 2:
+        shot = sys.argv[1]
+        cfg = sys.argv[2] if len(sys.argv) > 2 else "num_config.json"
+    else:
+        shot = r"C:\Users\Administrator\Desktop\shot.png"
+        cfg = "num_config.json"
     draw_debug(shot, cfg)

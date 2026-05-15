@@ -1,3 +1,4 @@
+import sys
 import mss
 import pydirectinput
 from PIL import Image
@@ -27,7 +28,7 @@ def mover_cursor(dr, dc):
         pydirectinput.press("left", presses=-dc, interval=DELAY)
 
 
-def main():
+def main(screenshot_path=None):
     START_ROW = 3
     START_COL = 3
 
@@ -35,15 +36,12 @@ def main():
     targets_cfg = config.get("targets", {})
     grid_cfg = config.get("grid", {})
 
-    if not targets_cfg:
-        print("[num_match] targets config not found")
-        return
-    if not grid_cfg:
-        print("[num_match] grid config not found")
-        return
-
-    print("[num_match] capturando tela...")
-    screenshot = capturar_tela()
+    if screenshot_path:
+        print(f"[num_match] lendo imagem: {screenshot_path}")
+        screenshot = Image.open(screenshot_path)
+    else:
+        print("[num_match] capturando tela...")
+        screenshot = capturar_tela()
 
     print("[num_match] reconhecendo alvos...")
     targets = recognize(screenshot, targets_cfg)
@@ -86,4 +84,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    path = sys.argv[1] if len(sys.argv) > 1 else None
+    main(path)
