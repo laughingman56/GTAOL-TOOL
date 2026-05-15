@@ -130,6 +130,11 @@ def grid_recognize(screenshot, grid_config):
             x2 = x1 + cw
             y2 = y1 + ch
 
+            sw, sh = screenshot.size
+            if x1 < 0 or y1 < 0 or x1 >= sw or y1 >= sh or x2 > sw or y2 > sh:
+                row_data.append("")
+                continue
+
             crop = screenshot.crop((x1, y1, x2, y2))
 
             if crop.size[0] < 2:

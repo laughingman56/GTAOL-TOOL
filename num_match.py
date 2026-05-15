@@ -1,10 +1,11 @@
-import time
 import mss
 import pydirectinput
 from PIL import Image
 from find_num import load_config, recognize, grid_recognize
 
 DELAY = 0.05
+pydirectinput.PAUSE = 0.02
+pydirectinput.FAILSAFE = False
 
 
 def capturar_tela():
@@ -15,9 +16,6 @@ def capturar_tela():
 
 
 def mover_cursor(dr, dc):
-    pydirectinput.PAUSE = 0.02
-    pydirectinput.FAILSAFE = False
-
     if dr > 0:
         pydirectinput.press("down", presses=dr, interval=DELAY)
     elif dr < 0:
