@@ -31,7 +31,7 @@ def load_samples(data_dir="num_samples"):
 
 
 class Net:
-    def __init__(self, input_dim=256, hidden_dim=32, output_dim=10):
+    def __init__(self, input_dim=256, hidden_dim=64, output_dim=10):
         rng = np.random.RandomState(42)
         self.w1 = rng.randn(input_dim, hidden_dim).astype(np.float32) * 0.01
         self.b1 = np.zeros(hidden_dim, dtype=np.float32)
@@ -83,7 +83,7 @@ def augment(X, y):
     return X_aug, y
 
 
-def train(data_dir="num_samples", epochs=400, lr=0.01, momentum=0.9):
+def train(data_dir="num_samples", epochs=800, lr=0.01, momentum=0.9):
     X, y = load_samples(data_dir)
     print(f"Loaded {len(X)} samples")
 
@@ -91,7 +91,7 @@ def train(data_dir="num_samples", epochs=400, lr=0.01, momentum=0.9):
     v_w1, v_b1, v_w2, v_b2 = 0, 0, 0, 0
 
     for epoch in range(epochs):
-        if epoch > 0 and epoch % 100 == 0:
+        if epoch > 0 and epoch % 200 == 0:
             lr *= 0.5
 
         X_batch, y_batch = augment(X, y)
