@@ -131,10 +131,8 @@ class CNN:
         da1[self.z1 <= 0] = 0
 
         dconv1_cols = da1.reshape(N, 8, -1)
-        w1_row = self.conv1_w.reshape(8, -1)
-        dcols = w1_row.T @ dconv1_cols
 
-        dconv1_w = (dconv1_cols @ self.cols1.transpose(0, 2, 1).reshape(-1, self.cols1.shape[1])).reshape(8, 1, 3, 3).sum(axis=0, keepdims=True).reshape(8, 1, 3, 3)
+        dconv1_w = np.einsum('nof,nif->oi', dconv1_cols, self.cols1).reshape(8, 1, 3, 3)
         dconv1_b = np.sum(da1.reshape(N, 8, -1), axis=(0, 2))
 
         return dconv1_w, dconv1_b, dfc1_w, dfc1_b, dfc2_w, dfc2_b
