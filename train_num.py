@@ -91,6 +91,16 @@ class CNN:
         self.fc2_w = (rng.randn(10, 64) * np.sqrt(2.0 / 64)).astype(np.float32)
         self.fc2_b = np.zeros(10, dtype=np.float32)
 
+    def load_pretrained(self, path):
+        with open(path, "r", encoding="utf-8") as f:
+            w = json.load(f)
+        self.conv1_w = np.array(w["conv1_w"], dtype=np.float32)
+        self.conv1_b = np.array(w["conv1_b"], dtype=np.float32)
+        self.fc1_w = np.array(w["fc1_w"], dtype=np.float32)
+        self.fc1_b = np.array(w["fc1_b"], dtype=np.float32)
+        self.fc2_w = np.array(w["fc2_w"], dtype=np.float32)
+        self.fc2_b = np.array(w["fc2_b"], dtype=np.float32)
+
     def forward(self, X_flat):
         N = X_flat.shape[0]
         self.X2d = X_flat.reshape(N, 1, 16, 16)
@@ -185,20 +195,24 @@ def augment_light(X):
     return np.clip(X, 0.0, 1.0)
 
 
-def train(data_dir="num_samples", mnist_path="mnist.npz", epochs=600, lr=0.01, momentum=0.9):
+def train(data_dir="num_samples", mnist_path="mnist.npz", epochs=400, lr=0.01, momentum=0.9,
+         pretrained=None):
     X_game, y_game = load_samples(data_dir)
     print(f"Loaded {len(X_game)} game samples from {data_dir}")
 
     use_mnist = os.path.exists(mnist_path)
-    if use_mnist:
+    if use_mnist and pretrained is None:
         X_mnist, y_mnist = load_mnist(mnist_path)
         print(f"Loaded {len(X_mnist)} MNIST samples from {mnist_path}")
         mnist_per_epoch = min(3000, len(X_mnist))
     else:
-        print(f"[warn] {mnist_path} not found, training with game samples only")
         X_mnist, y_mnist = None, None
 
     net = CNN()
+    if pretrained and os.path.exists(pretrained):
+        net.load_pretrained(pretrained)
+        print(f"Loaded pretrained weights from {pretrained}")
+
     v_cw = np.zeros_like(net.conv1_w)
     v_cb = np.zeros_like(net.conv1_b)
     v_f1w = np.zeros_like(net.fc1_w)
@@ -212,7 +226,7 @@ def train(data_dir="num_samples", mnist_path="mnist.npz", epochs=600, lr=0.01, m
 
         X_game_aug, y_game_aug = augment_strong(X_game, y_game)
 
-        if use_mnist:
+        if X_mnist is not None:
             epoch_rng = np.random.RandomState(epoch)
             idx = epoch_rng.choice(len(X_mnist), mnist_per_epoch, replace=False)
             X_mnist_batch, y_mnist_batch = X_mnist[idx], y_mnist[idx]
@@ -254,6 +268,60 @@ def train(data_dir="num_samples", mnist_path="mnist.npz", epochs=600, lr=0.01, m
             preds = np.argmax(net.probs, axis=1)
             acc = np.mean(preds == y_batch)
             print(f"  Epoch {epoch:3d}  loss={loss_val:.4f}  acc={acc:.3f}  lr={lr:.4f}")
+
+    return net
+
+
+def pretrain_mnist(mnist_path="mnist.npz", epochs=300, lr=0.01, momentum=0.9):
+    X_all, y_all = load_mnist(mnist_path, sample_per_class=4000)
+    print(f"Loading {len(X_all)} MNIST samples for pretraining")
+
+    net = CNN()
+    v_cw = np.zeros_like(net.conv1_w)
+    v_cb = np.zeros_like(net.conv1_b)
+    v_f1w = np.zeros_like(net.fc1_w)
+    v_f1b = np.zeros_like(net.fc1_b)
+    v_f2w = np.zeros_like(net.fc2_w)
+    v_f2b = np.zeros_like(net.fc2_b)
+
+    for epoch in range(epochs):
+        if epoch > 0 and epoch % 150 == 0:
+            lr *= 0.5
+
+        epoch_rng = np.random.RandomState(epoch)
+        idx = epoch_rng.choice(len(X_all), 4000, replace=False)
+        X_batch = X_all[idx] + np.random.uniform(-0.02, 0.02, (4000, 256)).astype(np.float32)
+        X_batch = np.clip(X_batch, 0.0, 1.0)
+        y_batch = y_all[idx]
+
+        net.forward(X_batch)
+        loss_val = net.loss(y_batch)
+
+        grads = net.backward(X_batch, y_batch)
+        dcw, dcb, df1w, df1b, df2w, df2b = grads
+
+        dcw += 0.001 * net.conv1_w
+        df1w += 0.001 * net.fc1_w
+        df2w += 0.001 * net.fc2_w
+
+        v_cw = momentum * v_cw - lr * dcw
+        v_cb = momentum * v_cb - lr * dcb
+        v_f1w = momentum * v_f1w - lr * df1w
+        v_f1b = momentum * v_f1b - lr * df1b
+        v_f2w = momentum * v_f2w - lr * df2w
+        v_f2b = momentum * v_f2b - lr * df2b
+
+        net.conv1_w += v_cw
+        net.conv1_b += v_cb
+        net.fc1_w += v_f1w
+        net.fc1_b += v_f1b
+        net.fc2_w += v_f2w
+        net.fc2_b += v_f2b
+
+        if epoch % 50 == 0:
+            preds = np.argmax(net.probs, axis=1)
+            acc = np.mean(preds == y_batch)
+            print(f"  MNIST epoch {epoch:3d}  loss={loss_val:.4f}  acc={acc:.3f}  lr={lr:.4f}")
 
     return net
 
@@ -338,10 +406,12 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("command", nargs="?", default="train",
-                        choices=["train", "collect"])
+                        choices=["train", "collect", "pretrain-mnist"])
     parser.add_argument("--data-dir", default="num_samples")
     parser.add_argument("--weights", default="num_weights.json")
     parser.add_argument("--screenshot")
+    parser.add_argument("--pretrained", default=None,
+                        help="Path to pretrained weights for fine-tuning")
     args = parser.parse_args()
 
     if args.command == "collect":
@@ -349,6 +419,17 @@ if __name__ == "__main__":
             print("Usage: python train_num.py collect --screenshot shot.png")
             exit(1)
         collect_samples(args.screenshot)
+    elif args.command == "pretrain-mnist":
+        if not os.path.exists("mnist.npz"):
+            print("mnist.npz not found. Please place the file in the project directory.")
+            exit(1)
+        print("=== Phase 1: Pretraining on MNIST ===")
+        net = pretrain_mnist("mnist.npz", epochs=300)
+        save_weights(net, "mnist_weights.json")
+        print("Pretrained weights saved to mnist_weights.json")
     else:
-        net = train(args.data_dir)
+        if args.pretrained is None and os.path.exists("mnist_weights.json"):
+            args.pretrained = "mnist_weights.json"
+            print("[auto] detected mnist_weights.json, will fine-tune on game samples")
+        net = train(args.data_dir, pretrained=args.pretrained)
         save_weights(net, args.weights)
