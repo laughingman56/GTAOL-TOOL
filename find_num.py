@@ -110,3 +110,40 @@ def recognize(screenshot, config):
             print(f"[find_num] unsupported digits={digits} for region: {name}")
 
     return result
+
+
+def grid_recognize(screenshot, grid_config):
+    w = _get_weights()
+    gx = grid_config["x"]
+    gy = grid_config["y"]
+    cw = grid_config["cell_w"]
+    ch = grid_config["cell_h"]
+    cols = grid_config["cols"]
+    rows = grid_config["rows"]
+
+    result = []
+    for r in range(rows):
+        row_data = []
+        for c in range(cols):
+            x1 = gx + c * cw
+            y1 = gy + r * ch
+            x2 = x1 + cw
+            y2 = y1 + ch
+
+            crop = screenshot.crop((x1, y1, x2, y2))
+
+            if crop.size[0] < 2:
+                row_data.append("")
+                continue
+
+            half = crop.size[0] // 2
+            left = crop.crop((0, 0, half, crop.size[1]))
+            right = crop.crop((half, 0, crop.size[0], crop.size[1]))
+
+            lv = preprocess(left)
+            rv = preprocess(right)
+            l_idx = forward(lv, w["w1"], w["b1"], w["w2"], w["b2"])
+            r_idx = forward(rv, w["w1"], w["b1"], w["w2"], w["b2"])
+            row_data.append(f"{l_idx}{r_idx}")
+        result.append(row_data)
+    return result
