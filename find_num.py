@@ -49,7 +49,7 @@ from PIL import Image
 def preprocess(image, size=16):
     img = image.convert("L")
     img = img.resize((size, size), Image.Resampling.LANCZOS)
-    pixels = list(img.getdata())
+    pixels = list(img.tobytes())
     return [p / 255.0 for p in pixels]
 
 
