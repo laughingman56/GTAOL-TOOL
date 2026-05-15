@@ -3,8 +3,12 @@ import json
 import os
 from PIL import Image
 
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
-def load_samples(data_dir="num_samples"):
+
+def load_samples(data_dir="num_samples", img_size=24):
     X, y = [], []
     for label in range(10):
         label_dir = os.path.join(data_dir, str(label))
@@ -19,7 +23,7 @@ def load_samples(data_dir="num_samples"):
             except Exception:
                 print(f"  [warn] skipping corrupted image: {fpath}")
                 continue
-            img = img.resize((24, 24), Image.Resampling.LANCZOS)
+            img = img.resize((img_size, img_size), Image.Resampling.LANCZOS)
             pixels = np.asarray(img, dtype=np.float32).ravel() / 255.0
             X.append(pixels)
             y.append(label)
@@ -30,7 +34,7 @@ def load_samples(data_dir="num_samples"):
     return np.array(X)[indices], np.array(y)[indices]
 
 
-def load_mnist(npz_path="mnist.npz", sample_per_class=2000):
+def load_mnist(npz_path="mnist.npz", sample_per_class=2000, img_size=24):
     data = np.load(npz_path)
     X_raw = data["x_train"].astype(np.float32) / 255.0
     y_raw = data["y_train"]
@@ -44,7 +48,7 @@ def load_mnist(npz_path="mnist.npz", sample_per_class=2000):
         chosen = rng.choice(idx, take, replace=False)
         for i in chosen:
             img = Image.fromarray((X_raw[i] * 255).astype(np.uint8), mode="L")
-            img = img.resize((24, 24), Image.Resampling.LANCZOS)
+            img = img.resize((img_size, img_size), Image.Resampling.LANCZOS)
             pixels = np.asarray(img, dtype=np.float32).ravel() / 255.0
             X_out.append(pixels)
             y_out.append(label)
@@ -56,290 +60,148 @@ def load_mnist(npz_path="mnist.npz", sample_per_class=2000):
     return X_arr[indices], y_arr[indices]
 
 
-def _im2col(X, KH, KW, stride=1):
-    N, C, H, W = X.shape
-    OH = (H - KH) // stride + 1
-    OW = (W - KW) // stride + 1
-    cols = np.zeros((N, C * KH * KW, OH * OW), dtype=np.float32)
-    for i in range(OH):
-        for j in range(OW):
-            patch = X[:, :, i:i+KH, j:j+KW]
-            cols[:, :, i * OW + j] = patch.reshape(N, -1)
-    return cols, OH, OW
-
-
-def _col2im(cols, X_shape, KH, KW, stride=1):
-    N, C, H, W = X_shape
-    OH = (H - KH) // stride + 1
-    OW = (W - KW) // stride + 1
-    X = np.zeros(X_shape, dtype=np.float32)
-    for i in range(OH):
-        for j in range(OW):
-            patch = cols[:, :, i * OW + j].reshape(N, C, KH, KW)
-            X[:, :, i:i+KH, j:j+KW] += patch
-    return X
-
-
-class CNN:
-    def __init__(self):
-        rng = np.random.RandomState(42)
-        self.conv1_w = (rng.randn(8, 1, 3, 3) * np.sqrt(2.0 / (1 * 3 * 3))).astype(np.float32)
-        self.conv1_b = np.zeros(8, dtype=np.float32)
-        fc1_in = 8 * 11 * 11
-        self.fc1_w = (rng.randn(64, fc1_in) * np.sqrt(2.0 / fc1_in)).astype(np.float32)
-        self.fc1_b = np.zeros(64, dtype=np.float32)
-        self.fc2_w = (rng.randn(10, 64) * np.sqrt(2.0 / 64)).astype(np.float32)
-        self.fc2_b = np.zeros(10, dtype=np.float32)
-
-    def load_pretrained(self, path):
-        with open(path, "r", encoding="utf-8") as f:
-            w = json.load(f)
-        self.conv1_w = np.array(w["conv1_w"], dtype=np.float32)
-        self.conv1_b = np.array(w["conv1_b"], dtype=np.float32)
-        self.fc1_w = np.array(w["fc1_w"], dtype=np.float32)
-        self.fc1_b = np.array(w["fc1_b"], dtype=np.float32)
-        self.fc2_w = np.array(w["fc2_w"], dtype=np.float32)
-        self.fc2_b = np.array(w["fc2_b"], dtype=np.float32)
-
-    def forward(self, X_flat):
-        N = X_flat.shape[0]
-        self.X2d = X_flat.reshape(N, 1, 24, 24)
-
-        self.cols1, OH1, OW1 = _im2col(self.X2d, 3, 3)
-        w1_row = self.conv1_w.reshape(8, -1)
-        conv1_out = w1_row @ self.cols1 + self.conv1_b.reshape(8, 1)
-        self.z1 = conv1_out.reshape(N, 8, OH1, OW1)
-        self.a1 = np.maximum(0, self.z1)
-
-        N2, C2, H2, W2_ = self.a1.shape
-        a1_6d = self.a1.reshape(N2, C2, H2 // 2, 2, W2_ // 2, 2)
-        self.p1 = a1_6d.max(axis=3).max(axis=4)
-        a1_flat = a1_6d.reshape(N2, C2, H2 // 2, 2, W2_ // 2 * 2)
-        self.p1_idx = a1_flat.argmax(axis=3)
-
-        self.flat = self.p1.reshape(N, -1)
-        if self.flat.shape[1] != 8 * 11 * 11:
-            self.flat = self.flat[:, :8 * 11 * 11]
-
-        self.z2 = self.flat @ self.fc1_w.T + self.fc1_b
-        self.a2 = np.maximum(0, self.z2)
-
-        self.z3 = self.a2 @ self.fc2_w.T + self.fc2_b
-        shifted = self.z3 - np.max(self.z3, axis=1, keepdims=True)
-        exps = np.exp(shifted)
-        self.probs = exps / np.sum(exps, axis=1, keepdims=True)
-        return self.probs
-
-    def loss(self, y):
-        N = len(y)
-        correct = self.probs[np.arange(N), y]
-        return -np.mean(np.log(correct + 1e-8))
-
-    def backward(self, X_flat, y):
-        N = len(y)
-        dout = self.probs.copy()
-        dout[np.arange(N), y] -= 1
-        dout /= N
-
-        dfc2_w = dout.T @ self.a2
-        dfc2_b = np.sum(dout, axis=0)
-
-        da2 = dout @ self.fc2_w
-        da2[self.a2 <= 0] = 0
-
-        dfc1_w = da2.T @ self.flat
-        dfc1_b = np.sum(da2, axis=0)
-
-        dflat = da2 @ self.fc1_w
-        dp1 = dflat.reshape(self.p1.shape)
-
-        da1 = np.zeros_like(self.a1)
-        N2, C2, H2, W2_ = self.a1.shape
-        pH, pW = H2 // 2, W2_ // 2
-        for i in range(pH):
-            for j in range(pW):
-                idx = self.p1_idx[:, :, i, j]
-                for n in range(N2):
-                    for c in range(C2):
-                        mi = 2 * i + (idx[n, c] // 2)
-                        mj = 2 * j + (idx[n, c] % 2)
-                        da1[n, c, mi, mj] += dp1[n, c, i, j]
-        da1[self.z1 <= 0] = 0
-
-        dconv1_cols = da1.reshape(N, 8, -1)
-
-        dconv1_w = np.einsum('nof,nif->oi', dconv1_cols, self.cols1).reshape(8, 1, 3, 3)
-        dconv1_b = np.sum(da1.reshape(N, 8, -1), axis=(0, 2))
-
-        return dconv1_w, dconv1_b, dfc1_w, dfc1_b, dfc2_w, dfc2_b
-
-
-def augment_strong(X, y):
+def augment_strong(X, y, img_size=24):
     N = X.shape[0]
+    rng = np.random.RandomState()
     X_aug = X.copy()
-    noise = np.random.uniform(-0.03, 0.03, X_aug.shape).astype(np.float32)
+    noise = rng.uniform(-0.03, 0.03, X_aug.shape).astype(np.float32)
     X_aug += noise
     X_aug = np.clip(X_aug, 0.0, 1.0)
-    X_aug2d = X_aug.reshape(N, 1, 24, 24)
-    shift_y = np.random.randint(-2, 3)
-    shift_x = np.random.randint(-2, 3)
-    X_aug2d = np.roll(X_aug2d, shift_y, axis=2)
-    X_aug2d = np.roll(X_aug2d, shift_x, axis=3)
-    X_aug = X_aug2d.reshape(N, 576)
-    return X_aug, y
+    X_aug = X_aug.reshape(N, 1, img_size, img_size)
+    shift_y = rng.randint(-2, 3)
+    shift_x = rng.randint(-2, 3)
+    X_aug = np.roll(X_aug, shift_y, axis=2)
+    X_aug = np.roll(X_aug, shift_x, axis=3)
+    return X_aug.reshape(N, 1, img_size, img_size), y
 
 
-def augment_light(X):
-    noise = np.random.uniform(-0.01, 0.01, X.shape).astype(np.float32)
+def augment_light(X, img_size=24):
+    rng = np.random.RandomState()
+    noise = rng.uniform(-0.01, 0.01, X.shape).astype(np.float32)
     X = X + noise
+    X = X.reshape(-1, 1, img_size, img_size)
     return np.clip(X, 0.0, 1.0)
 
 
-def train(data_dir="num_samples", mnist_path="mnist.npz", epochs=400, lr=0.01, momentum=0.9,
-         pretrained=None):
-    X_game, y_game = load_samples(data_dir)
-    print(f"Loaded {len(X_game)} game samples from {data_dir}")
+class CNNModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Conv2d(1, 8, 3, padding=0)
+        self.fc1 = nn.Linear(8 * 11 * 11, 64)
+        self.fc2 = nn.Linear(64, 10)
 
-    use_mnist = os.path.exists(mnist_path)
-    if use_mnist and pretrained is None:
-        X_mnist, y_mnist = load_mnist(mnist_path)
-        print(f"Loaded {len(X_mnist)} MNIST samples from {mnist_path}")
-        mnist_per_epoch = min(3000, len(X_mnist))
-    else:
-        X_mnist, y_mnist = None, None
+    def forward(self, x):
+        x = F.relu(self.conv1(x))
+        x = F.max_pool2d(x, 2)
+        x = x.view(x.size(0), -1)
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
 
-    net = CNN()
-    if pretrained and os.path.exists(pretrained):
-        net.load_pretrained(pretrained)
-        print(f"Loaded pretrained weights from {pretrained}")
 
-    v_cw = np.zeros_like(net.conv1_w)
-    v_cb = np.zeros_like(net.conv1_b)
-    v_f1w = np.zeros_like(net.fc1_w)
-    v_f1b = np.zeros_like(net.fc1_b)
-    v_f2w = np.zeros_like(net.fc2_w)
-    v_f2b = np.zeros_like(net.fc2_b)
+def compute_acc(logits, y):
+    preds = torch.argmax(logits, dim=1)
+    return (preds == y).float().mean().item()
 
+
+def pretrain_mnist(mnist_path="mnist.npz", epochs=100, lr=0.01, batch_size=256, img_size=24):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
+
+    X_all, y_all = load_mnist(mnist_path, sample_per_class=4000, img_size=img_size)
+    print(f"Loaded {len(X_all)} MNIST samples")
+
+    model = CNNModel().to(device)
+    optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=0.001)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.5)
+
+    N = len(X_all)
     for epoch in range(epochs):
-        if epoch > 0 and epoch % 200 == 0:
-            lr *= 0.5
+        rng = np.random.RandomState(epoch)
+        idx = rng.choice(N, min(batch_size * 8, N), replace=False)
+        X_batch = torch.tensor(X_all[idx], dtype=torch.float32, device=device)
+        X_batch = X_batch.view(-1, 1, img_size, img_size)
+        X_batch = X_batch + torch.randn_like(X_batch) * 0.02
+        X_batch = torch.clamp(X_batch, 0, 1)
+        y_batch = torch.tensor(y_all[idx], dtype=torch.long, device=device)
 
-        X_game_aug, y_game_aug = augment_strong(X_game, y_game)
+        optimizer.zero_grad()
+        logits = model(X_batch)
+        loss = F.cross_entropy(logits, y_batch)
+        loss.backward()
+        optimizer.step()
+        scheduler.step()
 
-        if X_mnist is not None:
-            epoch_rng = np.random.RandomState(epoch)
-            idx = epoch_rng.choice(len(X_mnist), mnist_per_epoch, replace=False)
-            X_mnist_batch, y_mnist_batch = X_mnist[idx], y_mnist[idx]
-            X_mnist_batch = augment_light(X_mnist_batch)
+        if epoch % 10 == 0:
+            acc = compute_acc(logits, y_batch)
+            print(f"  MNIST epoch {epoch:3d}  loss={loss.item():.4f}  acc={acc:.3f}  lr={scheduler.get_last_lr()[0]:.6f}")
 
-            X_batch = np.vstack([X_game_aug, X_mnist_batch])
-            y_batch = np.hstack([y_game_aug, y_mnist_batch])
-            perm = epoch_rng.permutation(len(X_batch))
-            X_batch = X_batch[perm]
-            y_batch = y_batch[perm]
-        else:
-            X_batch, y_batch = X_game_aug, y_game_aug
-
-        net.forward(X_batch)
-        loss_val = net.loss(y_batch)
-
-        grads = net.backward(X_batch, y_batch)
-        dcw, dcb, df1w, df1b, df2w, df2b = grads
-
-        dcw += 0.001 * net.conv1_w
-        df1w += 0.001 * net.fc1_w
-        df2w += 0.001 * net.fc2_w
-
-        v_cw = momentum * v_cw - lr * dcw
-        v_cb = momentum * v_cb - lr * dcb
-        v_f1w = momentum * v_f1w - lr * df1w
-        v_f1b = momentum * v_f1b - lr * df1b
-        v_f2w = momentum * v_f2w - lr * df2w
-        v_f2b = momentum * v_f2b - lr * df2b
-
-        net.conv1_w += v_cw
-        net.conv1_b += v_cb
-        net.fc1_w += v_f1w
-        net.fc1_b += v_f1b
-        net.fc2_w += v_f2w
-        net.fc2_b += v_f2b
-
-        if epoch % 50 == 0:
-            preds = np.argmax(net.probs, axis=1)
-            acc = np.mean(preds == y_batch)
-            print(f"  Epoch {epoch:3d}  loss={loss_val:.4f}  acc={acc:.3f}  lr={lr:.4f}")
-
-    return net
+    return model, device
 
 
-def pretrain_mnist(mnist_path="mnist.npz", epochs=300, lr=0.01, momentum=0.9):
-    X_all, y_all = load_mnist(mnist_path, sample_per_class=4000)
-    print(f"Loading {len(X_all)} MNIST samples for pretraining")
+def train_game(data_dir="num_samples", pretrained_model=None,
+               epochs=200, lr=0.005, batch_size=128, img_size=24):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
 
-    net = CNN()
-    v_cw = np.zeros_like(net.conv1_w)
-    v_cb = np.zeros_like(net.conv1_b)
-    v_f1w = np.zeros_like(net.fc1_w)
-    v_f1b = np.zeros_like(net.fc1_b)
-    v_f2w = np.zeros_like(net.fc2_w)
-    v_f2b = np.zeros_like(net.fc2_b)
+    X_game, y_game = load_samples(data_dir, img_size=img_size)
+    print(f"Loaded {len(X_game)} game samples")
 
+    model = CNNModel().to(device)
+    if pretrained_model is not None:
+        model.load_state_dict(pretrained_model.state_dict())
+        print("Loaded pretrained weights from MNIST")
+
+    optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=0.001)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.5)
+
+    N = len(X_game)
     for epoch in range(epochs):
-        if epoch > 0 and epoch % 150 == 0:
-            lr *= 0.5
+        X_aug, y_aug = augment_strong(X_game, y_game, img_size=img_size)
+        X_batch = torch.tensor(X_aug, dtype=torch.float32, device=device)
+        X_batch = torch.clamp(X_batch, 0, 1)
+        y_batch = torch.tensor(y_aug, dtype=torch.long, device=device)
 
-        epoch_rng = np.random.RandomState(epoch)
-        idx = epoch_rng.choice(len(X_all), 4000, replace=False)
-        X_batch = X_all[idx] + np.random.uniform(-0.02, 0.02, (4000, 576)).astype(np.float32)
-        X_batch = np.clip(X_batch, 0.0, 1.0)
-        y_batch = y_all[idx]
+        optimizer.zero_grad()
+        logits = model(X_batch)
+        loss = F.cross_entropy(logits, y_batch)
+        loss.backward()
+        optimizer.step()
+        scheduler.step()
 
-        net.forward(X_batch)
-        loss_val = net.loss(y_batch)
+        if epoch % 10 == 0:
+            acc = compute_acc(logits, y_batch)
+            print(f"  Game epoch {epoch:3d}  loss={loss.item():.4f}  acc={acc:.3f}  lr={scheduler.get_last_lr()[0]:.6f}")
 
-        grads = net.backward(X_batch, y_batch)
-        dcw, dcb, df1w, df1b, df2w, df2b = grads
-
-        dcw += 0.001 * net.conv1_w
-        df1w += 0.001 * net.fc1_w
-        df2w += 0.001 * net.fc2_w
-
-        v_cw = momentum * v_cw - lr * dcw
-        v_cb = momentum * v_cb - lr * dcb
-        v_f1w = momentum * v_f1w - lr * df1w
-        v_f1b = momentum * v_f1b - lr * df1b
-        v_f2w = momentum * v_f2w - lr * df2w
-        v_f2b = momentum * v_f2b - lr * df2b
-
-        net.conv1_w += v_cw
-        net.conv1_b += v_cb
-        net.fc1_w += v_f1w
-        net.fc1_b += v_f1b
-        net.fc2_w += v_f2w
-        net.fc2_b += v_f2b
-
-        if epoch % 50 == 0:
-            preds = np.argmax(net.probs, axis=1)
-            acc = np.mean(preds == y_batch)
-            print(f"  MNIST epoch {epoch:3d}  loss={loss_val:.4f}  acc={acc:.3f}  lr={lr:.4f}")
-
-    return net
+    return model
 
 
-def save_weights(net, path="num_weights.json"):
+def export_weights(model, path="num_weights.json", save_torch=True):
     w = {
-        "conv1_w": net.conv1_w.tolist(),
-        "conv1_b": net.conv1_b.tolist(),
-        "fc1_w": net.fc1_w.tolist(),
-        "fc1_b": net.fc1_b.tolist(),
-        "fc2_w": net.fc2_w.tolist(),
-        "fc2_b": net.fc2_b.tolist(),
+        "conv1_w": model.conv1.weight.detach().cpu().numpy().tolist(),
+        "conv1_b": model.conv1.bias.detach().cpu().numpy().tolist(),
+        "fc1_w": model.fc1.weight.detach().cpu().numpy().tolist(),
+        "fc1_b": model.fc1.bias.detach().cpu().numpy().tolist(),
+        "fc2_w": model.fc2.weight.detach().cpu().numpy().tolist(),
+        "fc2_b": model.fc2.bias.detach().cpu().numpy().tolist(),
         "arch": "cnn",
     }
     with open(path, "w", encoding="utf-8") as f:
         json.dump(w, f, separators=(",", ":"))
     size_kb = os.path.getsize(path) / 1024
     print(f"Weights saved to {path} ({size_kb:.1f} KB)")
+    if save_torch:
+        pt_path = path.replace(".json", ".pt")
+        torch.save(model.state_dict(), pt_path)
+        print(f"Torch model saved to {pt_path}")
+
+
+def load_pytorch_model(path):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = CNNModel().to(device)
+    model.load_state_dict(torch.load(path, map_location=device))
+    print(f"Loaded PyTorch model from {path}")
+    return model
 
 
 def collect_samples(screenshot_path, config_path="num_config.json", output_dir="num_samples"):
@@ -421,15 +283,22 @@ if __name__ == "__main__":
         collect_samples(args.screenshot)
     elif args.command == "pretrain-mnist":
         if not os.path.exists("mnist.npz"):
-            print("mnist.npz not found. Please place the file in the project directory.")
+            print("mnist.npz not found.")
             exit(1)
-        print("=== Phase 1: Pretraining on MNIST ===")
-        net = pretrain_mnist("mnist.npz", epochs=300)
-        save_weights(net, "mnist_weights.json")
-        print("Pretrained weights saved to mnist_weights.json")
+        print("=== Phase 1: Pretraining on MNIST (GPU) ===")
+        model, _ = pretrain_mnist("mnist.npz", epochs=100)
+        export_weights(model, "mnist_weights.json")
     else:
-        if args.pretrained is None and os.path.exists("mnist_weights.json"):
-            args.pretrained = "mnist_weights.json"
-            print("[auto] detected mnist_weights.json, will fine-tune on game samples")
-        net = train(args.data_dir, pretrained=args.pretrained)
-        save_weights(net, args.weights)
+        pretrained = None
+        if os.path.exists("mnist_weights.pt"):
+            pretrained = load_pytorch_model("mnist_weights.pt")
+            print("[auto] loaded mnist_weights.pt for fine-tuning")
+        elif args.pretrained and os.path.exists(args.pretrained):
+            pretrained = load_pytorch_model(args.pretrained)
+
+        print("=== Training on game samples (GPU) ===")
+        if pretrained is not None:
+            model = train_game(args.data_dir, pretrained_model=pretrained, epochs=200, lr=0.005)
+        else:
+            model = train_game(args.data_dir, epochs=200, lr=0.01)
+        export_weights(model, args.weights)
