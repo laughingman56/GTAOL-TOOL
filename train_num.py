@@ -31,7 +31,7 @@ def load_samples(data_dir="num_samples"):
 
 
 class Net:
-    def __init__(self, input_dim=256, hidden_dim=64, output_dim=10):
+    def __init__(self, input_dim=256, hidden_dim=128, output_dim=10):
         rng = np.random.RandomState(42)
         self.w1 = rng.randn(input_dim, hidden_dim).astype(np.float32) * 0.01
         self.b1 = np.zeros(hidden_dim, dtype=np.float32)
