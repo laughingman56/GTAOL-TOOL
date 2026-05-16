@@ -1,4 +1,3 @@
-import time
 import mss
 import pydirectinput
 from PIL import Image
@@ -127,20 +126,6 @@ def main():
     dc = c - START_COL - 2
     print(f"[num_match] movendo: dr={dr} dc={dc}")
     mover_cursor(dr, dc)
-
-    print("[num_match] aguardando numeros sob o cursor...")
-    check_c = c - 2
-    for tentativa in range(200):
-        time.sleep(0.05)
-        screenshot = capturar_tela()
-        grade = grid_recognize(screenshot, grid_cfg)
-        if check_c >= 0 and check_c + 1 < cols:
-            if grade[r][check_c] == t0 and grade[r][check_c + 1] == t1:
-                print(f"[num_match] conferido: {t0} {t1}")
-                pydirectinput.press("enter")
-                print("[num_match] concluido")
-                return
-
-    print("[num_match] timeout")
+    print("[num_match] concluido")
 
 
