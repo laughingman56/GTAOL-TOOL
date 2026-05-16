@@ -139,28 +139,47 @@ def pretrain_mnist(mnist_path="mnist.npz", epochs=100, lr=0.01, batch_size=256, 
     return model, device
 
 
-def train_game(data_dir="num_samples", pretrained_model=None,
-               epochs=200, lr=0.005, batch_size=128, img_size=24):
+def train_mixed(data_dir="num_samples", mnist_path="mnist.npz",
+                epochs=250, lr=0.01, batch_size=None, img_size=24):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
     X_game, y_game = load_samples(data_dir, img_size=img_size)
     print(f"Loaded {len(X_game)} game samples")
 
+    use_mnist = os.path.exists(mnist_path)
+    if use_mnist:
+        X_mnist, y_mnist = load_mnist(mnist_path, sample_per_class=3000, img_size=img_size)
+        print(f"Loaded {len(X_mnist)} MNIST samples")
+        mnist_per_epoch = min(4000, len(X_mnist))
+    else:
+        print(f"[warn] {mnist_path} not found, training with game samples only")
+        X_mnist, y_mnist = None, None
+
     model = CNNModel().to(device)
-    if pretrained_model is not None:
-        model.load_state_dict(pretrained_model.state_dict())
-        print("Loaded pretrained weights from MNIST")
-
     optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=0.001)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.5)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.5)
 
-    N = len(X_game)
     for epoch in range(epochs):
-        X_aug, y_aug = augment_strong(X_game, y_game, img_size=img_size)
-        X_batch = torch.tensor(X_aug, dtype=torch.float32, device=device)
+        X_ga, y_ga = augment_strong(X_game, y_game, img_size=img_size)
+
+        if use_mnist:
+            epoch_rng = np.random.RandomState(epoch)
+            idx = epoch_rng.choice(len(X_mnist), mnist_per_epoch, replace=False)
+            X_mb = augment_light(X_mnist[idx], img_size=img_size)
+            y_mb = y_mnist[idx]
+
+            X_all = np.vstack([X_ga, X_mb.reshape(-1, 1, img_size, img_size)])
+            y_all = np.hstack([y_ga, y_mb])
+            perm = epoch_rng.permutation(len(X_all))
+            X_all = X_all[perm]
+            y_all = y_all[perm]
+        else:
+            X_all, y_all = X_ga, y_ga
+
+        X_batch = torch.tensor(X_all, dtype=torch.float32, device=device)
         X_batch = torch.clamp(X_batch, 0, 1)
-        y_batch = torch.tensor(y_aug, dtype=torch.long, device=device)
+        y_batch = torch.tensor(y_all, dtype=torch.long, device=device)
 
         optimizer.zero_grad()
         logits = model(X_batch)
@@ -171,7 +190,7 @@ def train_game(data_dir="num_samples", pretrained_model=None,
 
         if epoch % 10 == 0:
             acc = compute_acc(logits, y_batch)
-            print(f"  Game epoch {epoch:3d}  loss={loss.item():.4f}  acc={acc:.3f}  lr={scheduler.get_last_lr()[0]:.6f}")
+            print(f"  Epoch {epoch:3d}  loss={loss.item():.4f}  acc={acc:.3f}  lr={scheduler.get_last_lr()[0]:.6f}")
 
     return model
 
@@ -289,16 +308,6 @@ if __name__ == "__main__":
         model, _ = pretrain_mnist("mnist.npz", epochs=100)
         export_weights(model, "mnist_weights.json")
     else:
-        pretrained = None
-        if os.path.exists("mnist_weights.pt"):
-            pretrained = load_pytorch_model("mnist_weights.pt")
-            print("[auto] loaded mnist_weights.pt for fine-tuning")
-        elif args.pretrained and os.path.exists(args.pretrained):
-            pretrained = load_pytorch_model(args.pretrained)
-
-        print("=== Training on game samples (GPU) ===")
-        if pretrained is not None:
-            model = train_game(args.data_dir, pretrained_model=pretrained, epochs=200, lr=0.005)
-        else:
-            model = train_game(args.data_dir, epochs=200, lr=0.01)
+        print("=== Training mixed MNIST + game samples (GPU) ===")
+        model = train_mixed(args.data_dir, epochs=250, lr=0.01)
         export_weights(model, args.weights)
