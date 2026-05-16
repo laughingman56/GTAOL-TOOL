@@ -5,7 +5,7 @@ from PIL import Image
 from find_num import load_config, recognize, grid_recognize
 from mss_dpi import ResolutionAdapter
 
-DELAY = 0.05
+DELAY = 0
 pydirectinput.PAUSE = 0.02
 pydirectinput.FAILSAFE = False
 
@@ -129,13 +129,14 @@ def main():
     mover_cursor(dr, dc)
 
     print("[num_match] aguardando numeros sob o cursor...")
+    check_c = c - 2
     for tentativa in range(200):
         time.sleep(0.05)
         screenshot = capturar_tela()
         grade = grid_recognize(screenshot, grid_cfg)
-        for cc in range(max(0, c - 2), min(c + 2, cols - 1)):
-            if grade[r][cc] == t0 and grade[r][cc + 1] == t1:
-                print(f"[num_match] conferido: {t0} {t1} na coluna {cc}")
+        if check_c >= 0 and check_c + 1 < cols:
+            if grade[r][check_c] == t0 and grade[r][check_c + 1] == t1:
+                print(f"[num_match] conferido: {t0} {t1}")
                 pydirectinput.press("enter")
                 print("[num_match] concluido")
                 return
@@ -143,5 +144,3 @@ def main():
     print("[num_match] timeout")
 
 
-if __name__ == "__main__":
-    main()
