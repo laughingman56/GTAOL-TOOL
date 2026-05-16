@@ -199,7 +199,7 @@ def export_weights(model, path="num_weights.json", save_torch=True):
 def load_pytorch_model(path):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = CNNModel().to(device)
-    model.load_state_dict(torch.load(path, map_location=device))
+    model.load_state_dict(torch.load(path, map_location=device, weights_only=True))
     print(f"Loaded PyTorch model from {path}")
     return model
 
