@@ -80,31 +80,31 @@ def main():
     targets_cfg, grid_cfg = _adapt_config(config)
 
     if not targets_cfg:
-        print("[num_match] targets config not found")
+        print("[num_match] 未找到目标配置")
         return
     if not grid_cfg:
-        print("[num_match] grid config not found")
+        print("[num_match] 未找到网格配置")
         return
 
-    print("[num_match] capturando tela...")
+    print("[num_match] 正在截屏...")
     screenshot = capturar_tela()
 
-    print("[num_match] reconhecendo alvos...")
+    print("[num_match] 正在识别目标...")
     targets = recognize(screenshot, targets_cfg)
     t0 = targets.get("t0", "")
     t1 = targets.get("t1", "")
     if not t0 or not t1:
-        print(f"[num_match] falha ao reconhecer alvos: t0={t0} t1={t1}")
+        print(f"[num_match] 识别目标失败: t0={t0} t1={t1}")
         return
-    print(f"[num_match] alvos: t0={t0} t1={t1}")
+    print(f"[num_match] 目标: t0={t0} t1={t1}")
 
-    print("[num_match] reconhecendo grade...")
+    print("[num_match] 正在识别网格...")
     grade = grid_recognize(screenshot, grid_cfg)
-    print("[num_match] grade reconhecida:")
+    print("[num_match] 网格识别结果:")
     for row in grade:
         print("  " + " ".join(row))
 
-    print("[num_match] buscando correspondencia...")
+    print("[num_match] 正在搜索匹配...")
     rows = grid_cfg["rows"]
     cols = grid_cfg["cols"]
     encontrado = None
@@ -117,15 +117,15 @@ def main():
             break
 
     if encontrado is None:
-        print("[num_match] correspondencia nao encontrada")
+        print("[num_match] 未找到匹配")
         return
 
     r, c = encontrado
-    print(f"[num_match] correspondencia encontrada: linha={r} coluna={c}")
+    print(f"[num_match] 找到匹配: 第{r}行 第{c}列")
     dr = r - START_ROW
     dc = c - START_COL - 2
-    print(f"[num_match] movendo: dr={dr} dc={dc}")
+    print(f"[num_match] 移动: dr={dr} dc={dc}")
     mover_cursor(dr, dc)
-    print("[num_match] concluido")
+    print("[num_match] 完成")
 
 
