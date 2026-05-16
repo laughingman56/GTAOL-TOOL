@@ -1,9 +1,17 @@
 import math
 import json
 import os
+import sys
+
+
+def _resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), relative_path)
 
 
 def load_config(path="num_config.json"):
+    path = _resource_path(path)
     if not os.path.exists(path):
         print(f"[find_num] config not found: {path}")
         return {}
@@ -16,6 +24,7 @@ def load_config(path="num_config.json"):
 
 
 def load_weights(path="num_weights.json"):
+    path = _resource_path(path)
     if not os.path.exists(path):
         raise RuntimeError(
             f"Weights file not found: {path}. Run train_num.py first."
