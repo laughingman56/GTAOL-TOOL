@@ -29,7 +29,13 @@ def mover_cursor(dr, dc):
         pydirectinput.press("left", presses=-dc, interval=DELAY)
 
 
-def _scale_config(config, scale):
+def _scale_config(config, config_base_h, game_h):
+    if config_base_h <= 0 or game_h <= 0:
+        return config
+    scale = float(game_h) / config_base_h
+    if abs(scale - 1.0) < 0.01:
+        return config
+    print(f"[num_match] resolucao: base={config_base_h}p atual={game_h}p escala={scale:.3f}")
     import copy
     scaled = copy.deepcopy(config)
     for name, region in scaled.get("targets", {}).items():
@@ -51,11 +57,10 @@ def main():
     targets_cfg = config.get("targets", {})
     grid_cfg = config.get("grid", {})
 
-    _, _, _, game_h = ResolutionAdapter.get_game_window_rect()
-    scale = float(game_h) / ResolutionAdapter.BASE_H
-    if abs(scale - 1.0) > 0.01:
-        print(f"[num_match] resolucao detectada: {game_h}p, fator de escala: {scale:.3f}")
-        config = _scale_config(config, scale)
+    config_base_h = config.get("base_h", 0)
+    if config_base_h > 0:
+        _, _, _, game_h = ResolutionAdapter.get_game_window_rect()
+        config = _scale_config(config, config_base_h, game_h)
         targets_cfg = config.get("targets", {})
         grid_cfg = config.get("grid", {})
 
@@ -103,7 +108,7 @@ def main():
     r, c = encontrado
     print(f"[num_match] correspondencia encontrada: linha={r} coluna={c}")
     dr = r - START_ROW
-    dc = c - START_COL-2
+    dc = c - START_COL - 2
     print(f"[num_match] movendo: dr={dr} dc={dc}")
     mover_cursor(dr, dc)
 
@@ -115,11 +120,12 @@ def main():
         for cc in range(max(0, c - 2), min(c + 2, cols - 1)):
             if grade[r][cc] == t0 and grade[r][cc + 1] == t1:
                 print(f"[num_match] conferido: {t0} {t1} na coluna {cc}")
-                pydirectinput.press("esc")
+                pydirectinput.press("enter")
                 print("[num_match] concluido")
                 return
 
     print("[num_match] timeout")
 
 
-
+if __name__ == "__main__":
+    main()
