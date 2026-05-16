@@ -3,6 +3,62 @@ import json
 import os
 from PIL import Image
 
+ImageFont = None
+ImageDraw = None
+
+def _lazy_font_imports():
+    global ImageFont, ImageDraw
+    if ImageFont is None:
+        from PIL import ImageFont, ImageDraw
+
+
+def generate_font_samples(output_dir="num_samples", fonts=None, sizes=None):
+    _lazy_font_imports()
+    import glob
+
+    if fonts is None:
+        fonts = glob.glob(r"C:\Windows\Fonts\*.ttf")
+        if not fonts:
+            fonts = glob.glob(r"C:\Windows\Fonts\*.ttc")
+
+    if sizes is None:
+        sizes = [18, 20, 22, 24, 26, 28]
+
+    os.makedirs(output_dir, exist_ok=True)
+    for label in range(10):
+        label_dir = os.path.join(output_dir, str(label))
+        os.makedirs(label_dir, exist_ok=True)
+
+    count = 0
+    for font_path in fonts:
+        try:
+            font = ImageFont.truetype(font_path, 20)
+        except Exception:
+            continue
+        for size in sizes:
+            try:
+                font = ImageFont.truetype(font_path, size)
+            except Exception:
+                continue
+            for label in range(10):
+                ch = str(label)
+                bbox = font.getbbox(ch)
+                bw = bbox[2] - bbox[0]
+                bh = bbox[3] - bbox[1]
+                if bw <= 0 or bh <= 0:
+                    continue
+                img = Image.new("L", (bw + 4, bh + 4), color=0)
+                draw = ImageDraw.Draw(img)
+                draw.text((2 - bbox[0], 2 - bbox[1]), ch, fill=255, font=font)
+                img = img.resize((24, 24), Image.Resampling.LANCZOS)
+                fname = f"font_{count:04d}.png"
+                fpath = os.path.join(output_dir, str(label), fname)
+                img.save(fpath)
+                count += 1
+
+    print(f"Generated {count} font samples across 10 digit classes")
+    return count
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -283,7 +339,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("command", nargs="?", default="train",
-                        choices=["train", "collect", "pretrain-mnist"])
+                        choices=["train", "collect", "pretrain-mnist", "gen-font"])
     parser.add_argument("--data-dir", default="num_samples")
     parser.add_argument("--weights", default="num_weights.json")
     parser.add_argument("--screenshot")
@@ -303,6 +359,8 @@ if __name__ == "__main__":
         print("=== Phase 1: Pretraining on MNIST (GPU) ===")
         model, _ = pretrain_mnist("mnist.npz", epochs=500)
         export_weights(model, "mnist_weights.json")
+    elif args.command == "gen-font":
+        generate_font_samples(args.data_dir)
     else:
         print("=== Training mixed MNIST + game samples (GPU) ===")
         model = train_mixed(args.data_dir, epochs=1000, lr=0.01)
