@@ -112,8 +112,7 @@ def pretrain_mnist(mnist_path="mnist.npz", epochs=100, lr=0.01, batch_size=256, 
     print(f"Loaded {len(X_all)} MNIST samples")
 
     model = CNNModel().to(device)
-    optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=0.001)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.5)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.001)
 
     N = len(X_all)
     for epoch in range(epochs):
@@ -130,11 +129,10 @@ def pretrain_mnist(mnist_path="mnist.npz", epochs=100, lr=0.01, batch_size=256, 
         loss = F.cross_entropy(logits, y_batch)
         loss.backward()
         optimizer.step()
-        scheduler.step()
 
         if epoch % 10 == 0:
             acc = compute_acc(logits, y_batch)
-            print(f"  MNIST epoch {epoch:3d}  loss={loss.item():.4f}  acc={acc:.3f}  lr={scheduler.get_last_lr()[0]:.6f}")
+            print(f"  MNIST epoch {epoch:3d}  loss={loss.item():.4f}  acc={acc:.3f}")
 
     return model, device
 
@@ -157,8 +155,7 @@ def train_mixed(data_dir="num_samples", mnist_path="mnist.npz",
         X_mnist, y_mnist = None, None
 
     model = CNNModel().to(device)
-    optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=0.001)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.5)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.001)
 
     for epoch in range(epochs):
         X_ga, y_ga = augment_strong(X_game, y_game, img_size=img_size)
@@ -186,11 +183,10 @@ def train_mixed(data_dir="num_samples", mnist_path="mnist.npz",
         loss = F.cross_entropy(logits, y_batch)
         loss.backward()
         optimizer.step()
-        scheduler.step()
 
         if epoch % 10 == 0:
             acc = compute_acc(logits, y_batch)
-            print(f"  Epoch {epoch:3d}  loss={loss.item():.4f}  acc={acc:.3f}  lr={scheduler.get_last_lr()[0]:.6f}")
+            print(f"  Epoch {epoch:3d}  loss={loss.item():.4f}  acc={acc:.3f}")
 
     return model
 
@@ -305,9 +301,9 @@ if __name__ == "__main__":
             print("mnist.npz not found.")
             exit(1)
         print("=== Phase 1: Pretraining on MNIST (GPU) ===")
-        model, _ = pretrain_mnist("mnist.npz", epochs=100)
+        model, _ = pretrain_mnist("mnist.npz", epochs=500)
         export_weights(model, "mnist_weights.json")
     else:
         print("=== Training mixed MNIST + game samples (GPU) ===")
-        model = train_mixed(args.data_dir, epochs=250, lr=0.01)
+        model = train_mixed(args.data_dir, epochs=1000, lr=0.01)
         export_weights(model, args.weights)
