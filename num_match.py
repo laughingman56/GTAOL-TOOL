@@ -3,6 +3,7 @@ import mss
 import pydirectinput
 from PIL import Image
 from find_num import load_config, recognize, grid_recognize
+from mss_dpi import ResolutionAdapter
 
 DELAY = 0.05
 pydirectinput.PAUSE = 0.02
@@ -28,6 +29,20 @@ def mover_cursor(dr, dc):
         pydirectinput.press("left", presses=-dc, interval=DELAY)
 
 
+def _scale_config(config, scale):
+    import copy
+    scaled = copy.deepcopy(config)
+    for name, region in scaled.get("targets", {}).items():
+        for key in ("x1", "y1", "x2", "y2"):
+            if key in region:
+                region[key] = int(region[key] * scale)
+    grid = scaled.get("grid", {})
+    for key in ("x", "y", "cell_w", "cell_h"):
+        if key in grid:
+            grid[key] = int(grid[key] * scale)
+    return scaled
+
+
 def main():
     START_ROW = 3
     START_COL = 3
@@ -35,6 +50,14 @@ def main():
     config = load_config("num_config.json")
     targets_cfg = config.get("targets", {})
     grid_cfg = config.get("grid", {})
+
+    _, _, _, game_h = ResolutionAdapter.get_game_window_rect()
+    scale = float(game_h) / ResolutionAdapter.BASE_H
+    if abs(scale - 1.0) > 0.01:
+        print(f"[num_match] resolucao detectada: {game_h}p, fator de escala: {scale:.3f}")
+        config = _scale_config(config, scale)
+        targets_cfg = config.get("targets", {})
+        grid_cfg = config.get("grid", {})
 
     if not targets_cfg:
         print("[num_match] targets config not found")
@@ -92,7 +115,7 @@ def main():
         for cc in range(max(0, c - 2), min(c + 2, cols - 1)):
             if grade[r][cc] == t0 and grade[r][cc + 1] == t1:
                 print(f"[num_match] conferido: {t0} {t1} na coluna {cc}")
-                pydirectinput.press("enter")
+                pydirectinput.press("esc")
                 print("[num_match] concluido")
                 return
 
