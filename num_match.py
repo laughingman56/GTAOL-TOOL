@@ -29,24 +29,48 @@ def mover_cursor(dr, dc):
         pydirectinput.press("left", presses=-dc, interval=DELAY)
 
 
-def _scale_config(config, config_base_h, game_h):
-    if config_base_h <= 0 or game_h <= 0:
-        return config
-    scale = float(game_h) / config_base_h
-    if abs(scale - 1.0) < 0.01:
-        return config
-    print(f"[num_match] resolucao: base={config_base_h}p atual={game_h}p escala={scale:.3f}")
-    import copy
-    scaled = copy.deepcopy(config)
-    for name, region in scaled.get("targets", {}).items():
-        for key in ("x1", "y1", "x2", "y2"):
-            if key in region:
-                region[key] = int(region[key] * scale)
-    grid = scaled.get("grid", {})
-    for key in ("x", "y", "cell_w", "cell_h"):
-        if key in grid:
-            grid[key] = int(grid[key] * scale)
-    return scaled
+def _to_base_region(x1, y1, x2, y2):
+    return (x1, y1, x2 - x1, y2 - y1)
+
+
+def _from_mss_config(cfg):
+    return {
+        "x1": cfg["left"],
+        "y1": cfg["top"],
+        "x2": cfg["left"] + cfg["width"],
+        "y2": cfg["top"] + cfg["height"],
+    }
+
+
+def _adapt_config(config):
+    targets_cfg = config.get("targets", {})
+    grid_cfg = config.get("grid", {})
+
+    adapted_targets = {}
+    for name, region in targets_cfg.items():
+        x1, y1, x2, y2 = region["x1"], region["y1"], region["x2"], region["y2"]
+        mss_cfg = ResolutionAdapter.get_mss_config(_to_base_region(x1, y1, x2, y2))
+        adapted_region = _from_mss_config(mss_cfg)
+        adapted_region["digits"] = region.get("digits", 2)
+        adapted_targets[name] = adapted_region
+
+    cols = grid_cfg["cols"]
+    rows = grid_cfg["rows"]
+    total_w = cols * grid_cfg["cell_w"]
+    total_h = rows * grid_cfg["cell_h"]
+    mss_cfg = ResolutionAdapter.get_mss_config((grid_cfg["x"], grid_cfg["y"], total_w, total_h))
+
+    adapted_grid = {
+        "x": mss_cfg["left"],
+        "y": mss_cfg["top"],
+        "cell_w": mss_cfg["width"] // cols,
+        "cell_h": mss_cfg["height"] // rows,
+        "cols": cols,
+        "rows": rows,
+        "cursor_w": grid_cfg.get("cursor_w", 4),
+    }
+
+    return adapted_targets, adapted_grid
 
 
 def main():
@@ -54,15 +78,7 @@ def main():
     START_COL = 3
 
     config = load_config("num_config.json")
-    targets_cfg = config.get("targets", {})
-    grid_cfg = config.get("grid", {})
-
-    config_base_h = config.get("base_h", 0)
-    if config_base_h > 0:
-        _, _, _, game_h = ResolutionAdapter.get_game_window_rect()
-        config = _scale_config(config, config_base_h, game_h)
-        targets_cfg = config.get("targets", {})
-        grid_cfg = config.get("grid", {})
+    targets_cfg, grid_cfg = _adapt_config(config)
 
     if not targets_cfg:
         print("[num_match] targets config not found")
