@@ -89,11 +89,12 @@ def main():
         time.sleep(0.05)
         screenshot = capturar_tela()
         grade = grid_recognize(screenshot, grid_cfg)
-        if grade[r][c] == t0 and grade[r][c + 1] == t1:
-            print(f"[num_match] conferido: {t0} {t1}")
-            pydirectinput.press("enter")
-            print("[num_match] concluido")
-            return
+        for cc in range(max(0, c - 2), min(c + 2, cols - 1)):
+            if grade[r][cc] == t0 and grade[r][cc + 1] == t1:
+                print(f"[num_match] conferido: {t0} {t1} na coluna {cc}")
+                pydirectinput.press("enter")
+                print("[num_match] concluido")
+                return
 
     print("[num_match] timeout")
 
