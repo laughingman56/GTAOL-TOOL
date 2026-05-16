@@ -1,4 +1,3 @@
-import sys
 import mss
 import pydirectinput
 from PIL import Image
@@ -28,7 +27,7 @@ def mover_cursor(dr, dc):
         pydirectinput.press("left", presses=-dc, interval=DELAY)
 
 
-def main(screenshot_path=None):
+def main():
     START_ROW = 3
     START_COL = 3
 
@@ -36,12 +35,15 @@ def main(screenshot_path=None):
     targets_cfg = config.get("targets", {})
     grid_cfg = config.get("grid", {})
 
-    if screenshot_path:
-        print(f"[num_match] lendo imagem: {screenshot_path}")
-        screenshot = Image.open(screenshot_path)
-    else:
-        print("[num_match] capturando tela...")
-        screenshot = capturar_tela()
+    if not targets_cfg:
+        print("[num_match] targets config not found")
+        return
+    if not grid_cfg:
+        print("[num_match] grid config not found")
+        return
+
+    print("[num_match] capturando tela...")
+    screenshot = capturar_tela()
 
     print("[num_match] reconhecendo alvos...")
     targets = recognize(screenshot, targets_cfg)
@@ -63,7 +65,7 @@ def main(screenshot_path=None):
     cols = grid_cfg["cols"]
     encontrado = None
     for r in range(rows):
-        for c in range(cols - 3):
+        for c in range(cols - 1):
             if grade[r][c] == t0 and grade[r][c + 1] == t1:
                 encontrado = (r, c)
                 break
@@ -83,6 +85,4 @@ def main(screenshot_path=None):
     print("[num_match] concluido")
 
 
-if __name__ == "__main__":
-    path = sys.argv[1] if len(sys.argv) > 1 else None
-    main(path)
+
