@@ -1,5 +1,4 @@
 import ctypes
-import sys
 
 SW_HIDE = 0
 SW_SHOW = 5
