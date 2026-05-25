@@ -190,7 +190,9 @@ class ConfigManager:
             "link0": "",
             "link1": "",
             "link2": "",
-            "link3": ""
+            "link3": "",
+
+            "console_visible": True
 
                 }
 
