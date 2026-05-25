@@ -192,7 +192,8 @@ class ConfigManager:
             "link2": "",
             "link3": "",
 
-            "console_visible": True
+            "console_visible": {"name": "调试窗口", "key": "NONE", "enabled": True},
+
 
                 }
 

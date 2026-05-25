@@ -93,7 +93,7 @@ def main():
     config = ConfigManager()
 
     # 恢复控制台窗口状态
-    console_visible = config.data.get("console_visible", True)
+    console_visible = config.data.get("console_visible", {}).get("enabled", False)
     if console_visible:
         console_window.show_console()
     else:
