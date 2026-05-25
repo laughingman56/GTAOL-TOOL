@@ -3,6 +3,7 @@ import sys
 import os
 import threading
 import  ctypes
+import console_window
 # 确保安装了相关库: pip install customtkinter pywin32
 import time
 from config_manager import ConfigManager
@@ -90,6 +91,13 @@ def main():
     # 1. 初始化数据层
     print("正在初始化配置...")
     config = ConfigManager()
+
+    # 恢复控制台窗口状态
+    console_visible = config.data.get("console_visible", True)
+    if console_visible:
+        console_window.show_console()
+    else:
+        console_window.hide_console()
 
     # 2. 初始化并启动监听层 (后台线程)
     print("正在启动 Win32 监听器...")
