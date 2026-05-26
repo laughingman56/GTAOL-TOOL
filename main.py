@@ -80,6 +80,17 @@ def check_single_instance():
 # ===========================
 # ============================================
 
+def console_monitor():
+    while True:
+        config = ConfigManager()
+        console_visible = config.data.get("console_visible", {}).get("enabled", True)
+        if console_visible:
+            console_window.show_console()
+        else:
+            console_window.hide_console()
+        time.sleep(0.5)
+
+
 def main():
     # 以管理员权限运行当前脚本
     run_as_admin()
@@ -92,12 +103,9 @@ def main():
     print("正在初始化配置...")
     config = ConfigManager()
 
-    # 恢复控制台窗口状态
-    console_visible = config.data.get("console_visible", {}).get("enabled", False)
-    if console_visible:
-        console_window.show_console()
-    else:
-        console_window.hide_console()
+    # 启动控制台窗口监控线程
+    console_thread = threading.Thread(target=console_monitor, name="ConsoleMonitor", daemon=True)
+    console_thread.start()
 
     # 2. 初始化并启动监听层 (后台线程)
     print("正在启动 Win32 监听器...")
