@@ -96,7 +96,13 @@ class ConfigManager:
 
             "casino": {"name": "赌场指纹", "key": "F9", "enabled": True},
             "security": {"name": "保安圆点", "key": "F10", "enabled": True},
-            "cayo": {"name": "佩岛指纹", "key": "F11", "enabled": False},
+            "cayo": {"name": "佩岛指纹", "key": "F11", "father": "all_cayo", "enabled": False},
+
+            #"all_cayo": {"name": "佩岛合集", "key": "NONE", "enabled": False},
+            "cayo_find_num": {"name": "佩岛前置武器库找数字", "key": "", "father": "all_cayo", "enabled": False},
+            #"other_unlock": {"name": "其他开锁", "key": "NONE", "enabled": False},
+            "assassin_6": {"name": "末日2卡暗杀6", "key": "]", "father": "other_unlock","enabled": False},
+
             "photo": {"name": "拍照攀爬", "key": "L", "enabled": False},
 
             "nat_down": {"name": "断网", "key": "NUM 十", "rule":0,"time_limited":True,"time":20,"enabled": False},
@@ -190,7 +196,10 @@ class ConfigManager:
             "link0": "",
             "link1": "",
             "link2": "",
-            "link3": ""
+            "link3": "",
+
+            "console_visible": {"name": "调试窗口", "key": "NONE", "enabled": True},
+
 
                 }
 
