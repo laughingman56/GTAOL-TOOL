@@ -69,3 +69,32 @@ def test_coarse_locate_dark_image_raises():
     img = Image.new("RGB", (100, 100), color=(0, 0, 0))
     with pytest.raises(GridDetectError):
         _coarse_locate(img)
+
+
+from auto_grid import _detect_rows, _detect_columns
+
+
+def test_detect_rows_8_rows():
+    img = Image.new("RGB", (240, 200), color=(0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    for r in range(8):
+        y = 20 + r * 20
+        for c in range(10):
+            x = 10 + c * 22
+            draw.text((x, y), "42", fill=(255, 255, 255))
+    y_lines, regions = _detect_rows(img, num_rows=8)
+    assert len(y_lines) == 8
+    for i in range(1, 8):
+        assert y_lines[i] > y_lines[i - 1]
+
+
+def test_detect_columns_10_cols():
+    img = Image.new("RGB", (260, 20), color=(0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    for c in range(10):
+        x = 10 + c * 24
+        draw.text((x, 2), "42", fill=(255, 255, 255))
+    x_lines = _detect_columns(img, num_cols=10)
+    assert len(x_lines) == 10
+    for i in range(1, 10):
+        assert x_lines[i] > x_lines[i - 1]

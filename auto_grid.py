@@ -117,3 +117,111 @@ def _coarse_locate(screenshot):
         ))
 
     return grid_region, target_regions
+
+
+def _detect_rows(roi, num_rows=8):
+
+    binary = _binarize(roi)
+    h_proj = _horizontal_projection(binary)
+    smoothed = _smooth(h_proj.astype(np.float64), window=5)
+
+    total_h = len(smoothed)
+    mean_val = smoothed.mean()
+    threshold = max(mean_val * 0.3, 1.0)
+
+    peaks = []
+    in_peak = False
+    peak_start = 0
+    for i in range(total_h):
+        if smoothed[i] > threshold and not in_peak:
+            in_peak = True
+            peak_start = i
+        elif smoothed[i] <= threshold and in_peak:
+            in_peak = False
+            peaks.append((peak_start, i))
+
+    if in_peak:
+        peaks.append((peak_start, total_h))
+
+    if len(peaks) < num_rows:
+        sorted_peaks = sorted(peaks, key=lambda p: p[1] - p[0], reverse=True)
+        peaks = sorted_peaks[:num_rows]
+        peaks.sort(key=lambda p: p[0])
+
+    if len(peaks) < num_rows:
+        raise GridDetectError(
+            f"detected only {len(peaks)} rows, need {num_rows}"
+        )
+
+    y_lines = []
+    for i in range(num_rows):
+        cy = (peaks[i][0] + peaks[i][1]) // 2
+        y_lines.append(cy)
+
+    if len(peaks) > num_rows:
+        peak_centers = [(p[0] + p[1]) / 2 for p in peaks]
+        used = [False] * len(peaks)
+
+        for i in range(num_rows):
+            target_y = y_lines[0] + i * (y_lines[-1] - y_lines[0]) / (num_rows - 1)
+            best = 0
+            best_dist = float("inf")
+            for j in range(len(peaks)):
+                if not used[j]:
+                    d = abs(peak_centers[j] - target_y)
+                    if d < best_dist:
+                        best_dist = d
+                        best = j
+            used[best] = True
+            y_lines[i] = int(peak_centers[best])
+
+    row_regions = []
+    for i in range(num_rows):
+        half_h = (y_lines[1] - y_lines[0]) // 2 if num_rows > 1 else len(smoothed) // (num_rows * 2)
+        y1 = max(y_lines[i] - half_h, 0)
+        y2 = min(y_lines[i] + half_h, len(binary) - 1)
+        row_regions.append((y1, y2))
+
+    return y_lines, row_regions
+
+
+def _detect_columns(row_roi, num_cols=10):
+
+    binary = _binarize(row_roi)
+    v_proj = _vertical_projection(binary)
+    smoothed = _smooth(v_proj.astype(np.float64), window=5)
+
+    total_w = len(smoothed)
+    mean_val = smoothed.mean()
+    threshold = max(mean_val * 0.3, 1.0)
+
+    peaks = []
+    in_peak = False
+    peak_start = 0
+    for i in range(total_w):
+        if smoothed[i] > threshold and not in_peak:
+            in_peak = True
+            peak_start = i
+        elif smoothed[i] <= threshold and in_peak:
+            in_peak = False
+            peaks.append((peak_start, i))
+
+    if in_peak:
+        peaks.append((peak_start, total_w))
+
+    if len(peaks) < num_cols:
+        sorted_peaks = sorted(peaks, key=lambda p: p[1] - p[0], reverse=True)
+        peaks = sorted_peaks[:num_cols]
+        peaks.sort(key=lambda p: p[0])
+
+    if len(peaks) < num_cols:
+        raise GridDetectError(
+            f"detected only {len(peaks)} columns, need {num_cols}"
+        )
+
+    x_lines = []
+    for j in range(num_cols):
+        cx = (peaks[j][0] + peaks[j][1]) // 2
+        x_lines.append(cx)
+
+    return x_lines
