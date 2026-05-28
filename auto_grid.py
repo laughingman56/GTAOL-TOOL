@@ -52,7 +52,7 @@ def _coarse_locate(screenshot):
     widths = ends - starts
     densities = [smoothed[s:e].mean() for s, e in zip(starts, ends)]
 
-    sorted_idx = np.argsort([w * d for w, d in zip(widths, densities)])[::-1]
+    sorted_idx = np.argsort(widths)[::-1]
 
     grid_idx = sorted_idx[0]
     grid_y1_small = starts[grid_idx]
@@ -62,8 +62,6 @@ def _coarse_locate(screenshot):
     for idx in sorted_idx[1:]:
         if starts[idx] < grid_y1_small and ends[idx] < grid_y1_small:
             target_indices.append(idx)
-    target_indices = target_indices[:2]
-
     targets = []
     for idx in target_indices:
         t_y1_small = starts[idx]
@@ -101,8 +99,8 @@ def _coarse_locate(screenshot):
     scale_y = h / sh
     pad = 20
     grid_region = (
-        int(grid_y1_small * scale_y) - pad,
-        int(grid_y2_small * scale_y) + pad,
+        max(int(grid_y1_small * scale_y) - pad, 0),
+        min(int(grid_y2_small * scale_y) + pad, h),
         0,
         w,
     )

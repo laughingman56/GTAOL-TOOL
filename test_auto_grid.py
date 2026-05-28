@@ -66,6 +66,7 @@ def test_coarse_locate_detects_grid():
     grid_region, targets = _coarse_locate(img)
     assert len(grid_region) == 4
     assert grid_region[0] <= 100 <= grid_region[1]
+    assert isinstance(targets, list)
 
 
 def test_coarse_locate_dark_image_raises():
