@@ -47,4 +47,5 @@ def test_smooth():
     arr = np.array([0, 0, 10, 0, 0], dtype=np.float64)
     result = _smooth(arr, window=3)
     assert len(result) == len(arr)
-    assert result[2] > 0
+    expected = np.array([0.0, 10/3, 10/3, 10/3, 0.0])
+    assert np.allclose(result, expected, atol=0.01)
