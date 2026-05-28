@@ -110,3 +110,30 @@ def test_detect_columns_error_on_empty():
     img = Image.new("RGB", (100, 10), color=(0, 0, 0))
     with pytest.raises(GridDetectError):
         _detect_columns(img, num_cols=10)
+
+
+from auto_grid import _equal_distance_correct, _split_two_digits
+
+
+def test_equal_distance_correct():
+    y_lines = [100, 120, 140, 160, 180, 200, 220, 240]
+    x_lines = [10, 30, 50, 70, 90, 110, 130, 150, 170, 190]
+    yc, xc, avg_h, avg_w = _equal_distance_correct(y_lines, x_lines)
+    assert avg_h == 20
+    assert avg_w == 20
+    assert yc == [100, 120, 140, 160, 180, 200, 220, 240]
+
+
+def test_split_two_digits_fallback():
+    img = Image.new("RGB", (30, 20), color=(0, 0, 0))
+    split = _split_two_digits(img)
+    assert split == 15
+
+
+def test_split_two_digits_gap():
+    img = Image.new("RGB", (50, 20), color=(0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    draw.text((2, 2), "1", fill=(255, 255, 255))
+    draw.text((30, 2), "2", fill=(255, 255, 255))
+    split = _split_two_digits(img)
+    assert 15 <= split <= 35
