@@ -33,7 +33,6 @@ def _smooth(arr, window=5):
 
 
 def _coarse_locate(screenshot):
-
     w, h = screenshot.size
     sw, sh = max(w // 4, 1), max(h // 4, 1)
     small = screenshot.resize((sw, sh), Image.LANCZOS)
@@ -120,7 +119,6 @@ def _coarse_locate(screenshot):
 
 
 def _detect_rows(roi, num_rows=8):
-
     binary = _binarize(roi)
     h_proj = _horizontal_projection(binary)
     smoothed = _smooth(h_proj.astype(np.float64), window=5)
@@ -186,7 +184,6 @@ def _detect_rows(roi, num_rows=8):
 
 
 def _detect_columns(row_roi, num_cols=10):
-
     binary = _binarize(row_roi)
     v_proj = _vertical_projection(binary)
     smoothed = _smooth(v_proj.astype(np.float64), window=5)
