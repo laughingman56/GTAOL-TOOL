@@ -98,3 +98,15 @@ def test_detect_columns_10_cols():
     assert len(x_lines) == 10
     for i in range(1, 10):
         assert x_lines[i] > x_lines[i - 1]
+
+
+def test_detect_rows_error_on_empty():
+    img = Image.new("RGB", (100, 100), color=(0, 0, 0))
+    with pytest.raises(GridDetectError):
+        _detect_rows(img, num_rows=8)
+
+
+def test_detect_columns_error_on_empty():
+    img = Image.new("RGB", (100, 10), color=(0, 0, 0))
+    with pytest.raises(GridDetectError):
+        _detect_columns(img, num_cols=10)

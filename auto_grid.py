@@ -158,7 +158,7 @@ def _detect_rows(roi, num_rows=8):
         cy = (peaks[i][0] + peaks[i][1]) // 2
         y_lines.append(cy)
 
-    if len(peaks) > num_rows:
+    if len(peaks) > num_rows and num_rows > 1:
         peak_centers = [(p[0] + p[1]) / 2 for p in peaks]
         used = [False] * len(peaks)
 
@@ -177,7 +177,7 @@ def _detect_rows(roi, num_rows=8):
 
     row_regions = []
     for i in range(num_rows):
-        half_h = (y_lines[1] - y_lines[0]) // 2 if num_rows > 1 else len(smoothed) // (num_rows * 2)
+        half_h = int((y_lines[-1] - y_lines[0]) / (num_rows - 1) / 2) if num_rows > 1 else len(smoothed) // (num_rows * 2)
         y1 = max(y_lines[i] - half_h, 0)
         y2 = min(y_lines[i] + half_h, len(binary) - 1)
         row_regions.append((y1, y2))
@@ -223,5 +223,22 @@ def _detect_columns(row_roi, num_cols=10):
     for j in range(num_cols):
         cx = (peaks[j][0] + peaks[j][1]) // 2
         x_lines.append(cx)
+
+    if len(peaks) > num_cols and num_cols > 1:
+        peak_centers = [(p[0] + p[1]) / 2 for p in peaks]
+        used = [False] * len(peaks)
+
+        for j in range(num_cols):
+            target_x = x_lines[0] + j * (x_lines[-1] - x_lines[0]) / (num_cols - 1)
+            best = 0
+            best_dist = float("inf")
+            for k in range(len(peaks)):
+                if not used[k]:
+                    d = abs(peak_centers[k] - target_x)
+                    if d < best_dist:
+                        best_dist = d
+                        best = k
+            used[best] = True
+            x_lines[j] = int(peak_centers[best])
 
     return x_lines
