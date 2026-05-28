@@ -160,8 +160,8 @@ def test_detect_grid_synthetic():
     img = Image.new("RGB", (800, 600), color=(0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    draw.text((350, 50), "42", fill=(255, 255, 255))
-    draw.text((420, 50), "17", fill=(255, 255, 255))
+    draw.text((350, 80), "42", fill=(255, 255, 255))
+    draw.text((380, 80), "17", fill=(255, 255, 255))
 
     gx, gy = 100, 150
     cw, ch = 55, 40
@@ -177,3 +177,7 @@ def test_detect_grid_synthetic():
     assert grid_cfg["rows"] == 8
     assert abs(grid_cfg["cell_w"] - cw) <= 5
     assert abs(grid_cfg["cell_h"] - ch) <= 5
+    assert "t1" in targets_cfg
+    assert targets_cfg["t0"]["digits"] == 2
+    assert 0 <= targets_cfg["t0"]["x1"] <= 799
+    assert 0 <= targets_cfg["t0"]["y1"] <= 599

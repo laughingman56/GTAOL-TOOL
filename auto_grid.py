@@ -370,9 +370,7 @@ def detect_grid(screenshot):
             spacing = avg_x_lines[-1] - (avg_x_lines[-2] if len(avg_x_lines) > 1 else 0)
             avg_x_lines.append(avg_x_lines[-1] + spacing)
 
-    avg_y_lines = []
-    for i in range(8):
-        avg_y_lines.append((row_regions[i][0] + row_regions[i][1]) // 2)
+    avg_y_lines = y_lines
 
     y_corrected, x_corrected, avg_row_h, avg_cell_w = _equal_distance_correct(
         avg_y_lines, avg_x_lines
@@ -404,7 +402,7 @@ def detect_grid(screenshot):
         pw = 600
         ph = min(80, grid_cfg["y"] - py)
         try:
-            t_cfg = _detect_targets(screenshot, (px, py, px + pw, py + ph))
+            t_cfg = _detect_targets(screenshot, (px, py, min(px + pw, w), py + ph))
             targets_cfg.update(t_cfg)
         except GridDetectError:
             raise GridDetectError("failed to detect targets")
