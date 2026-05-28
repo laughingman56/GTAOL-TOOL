@@ -245,16 +245,19 @@ def _detect_columns(row_roi, num_cols=10):
 
 
 def _equal_distance_correct(y_lines, x_lines, num_rows=8, num_cols=10):
-    if len(y_lines) >= 2:
-        avg_row_h = (y_lines[-1] - y_lines[0]) / (num_rows - 1)
-    else:
-        avg_row_h = 20
+    if len(y_lines) < 2 or len(x_lines) < 2:
+        raise GridDetectError(
+            f"insufficient lines for correction: rows={len(y_lines)} cols={len(x_lines)}"
+        )
+    if num_rows < 2 or num_cols < 2:
+        raise GridDetectError(
+            f"invalid dimensions: rows={num_rows} cols={num_cols}"
+        )
+
+    avg_row_h = (y_lines[-1] - y_lines[0]) / (num_rows - 1)
     y_corrected = [int(y_lines[0] + i * avg_row_h) for i in range(num_rows)]
 
-    if len(x_lines) >= 2:
-        avg_cell_w = (x_lines[-1] - x_lines[0]) / (num_cols - 1)
-    else:
-        avg_cell_w = 20
+    avg_cell_w = (x_lines[-1] - x_lines[0]) / (num_cols - 1)
     x_corrected = [int(x_lines[0] + j * avg_cell_w) for j in range(num_cols)]
 
     return y_corrected, x_corrected, int(avg_row_h), int(avg_cell_w)
@@ -265,15 +268,12 @@ def _split_two_digits(cell_image):
     if cw < 4:
         return cw // 2
 
-    gray = np.array(cell_image.convert("L"), dtype=np.float32)
-    binary = (gray > gray.mean() * 1.2).astype(np.uint8)
+    binary = _binarize(cell_image)
     v_proj = _vertical_projection(binary)
     smoothed = _smooth(v_proj.astype(np.float64), window=3)
 
     mid_start = cw // 3
     mid_end = 2 * cw // 3
-    if mid_end <= mid_start:
-        return cw // 2
 
     segment = smoothed[mid_start:mid_end]
     min_idx = int(np.argmin(segment))

@@ -124,6 +124,20 @@ def test_equal_distance_correct():
     assert yc == [100, 120, 140, 160, 180, 200, 220, 240]
 
 
+def test_equal_distance_correct_uneven():
+    y_lines = [100, 125, 145, 170, 190, 215, 235, 260]
+    yc, xc, avg_h, avg_w = _equal_distance_correct(y_lines, [10, 30, 50, 70, 90, 110, 130, 150, 170, 190])
+    assert yc[0] == y_lines[0]
+    assert yc[-1] == y_lines[-1]
+    for i in range(1, 8):
+        assert abs(yc[i] - yc[i-1] - (yc[1] - yc[0])) <= 1
+
+
+def test_equal_distance_correct_insufficient_lines():
+    with pytest.raises(GridDetectError):
+        _equal_distance_correct([100], [10])
+
+
 def test_split_two_digits_fallback():
     img = Image.new("RGB", (30, 20), color=(0, 0, 0))
     split = _split_two_digits(img)
