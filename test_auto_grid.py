@@ -49,3 +49,29 @@ def test_smooth():
     assert len(result) == len(arr)
     expected = np.array([0.0, 10/3, 10/3, 10/3, 0.0])
     assert np.allclose(result, expected, atol=0.01)
+
+
+from auto_grid import _coarse_locate, GridDetectError
+
+
+def test_coarse_locate_detects_grid():
+    img = Image.new("RGB", (400, 300), color=(0, 0, 0))
+    from PIL import ImageDraw
+    draw = ImageDraw.Draw(img)
+    for r in range(8):
+        for c in range(10):
+            x = 80 + c * 24
+            y = 100 + r * 20
+            draw.text((x, y), "42", fill=(255, 255, 255))
+    grid_region, targets = _coarse_locate(img)
+    assert len(grid_region) == 4
+    assert grid_region[0] <= 100 <= grid_region[1]
+
+
+def test_coarse_locate_dark_image_raises():
+    img = Image.new("RGB", (100, 100), color=(0, 0, 0))
+    try:
+        _coarse_locate(img)
+        assert False, "should have raised"
+    except GridDetectError:
+        pass
