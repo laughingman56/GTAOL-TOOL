@@ -76,35 +76,40 @@ def main():
     START_ROW = 3
     START_COL = 3
 
-    config = load_config("num_config.json")
-    targets_cfg, grid_cfg = _adapt_config(config)
-
-    if not targets_cfg:
-        print("[num_match] 未找到目标配置")
-        return
-    if not grid_cfg:
-        print("[num_match] 未找到网格配置")
-        return
-
-    print("[num_match] 正在截屏...")
     screenshot = capturar_tela()
 
-    print("[num_match] 正在识别目标...")
+    try:
+        from auto_grid import detect_grid, GridDetectError
+        targets_cfg, grid_cfg = detect_grid(screenshot)
+        print("[num_match] auto grid detection succeeded")
+    except (ImportError, GridDetectError) as e:
+        print(f"[num_match] auto detection failed ({e}), falling back to config")
+        config = load_config("num_config.json")
+        targets_cfg, grid_cfg = _adapt_config(config)
+
+    if not targets_cfg:
+        print("[num_match] no targets config")
+        return
+    if not grid_cfg:
+        print("[num_match] no grid config")
+        return
+
+    print("[num_match] recognizing targets...")
     targets = recognize(screenshot, targets_cfg)
     t0 = targets.get("t0", "")
     t1 = targets.get("t1", "")
     if not t0 or not t1:
-        print(f"[num_match] 识别目标失败: t0={t0} t1={t1}")
+        print(f"[num_match] target recognition failed: t0={t0} t1={t1}")
         return
-    print(f"[num_match] 目标: t0={t0} t1={t1}")
+    print(f"[num_match] targets: t0={t0} t1={t1}")
 
-    print("[num_match] 正在识别网格...")
+    print("[num_match] recognizing grid...")
     grade = grid_recognize(screenshot, grid_cfg)
-    print("[num_match] 网格识别结果:")
+    print("[num_match] grid:")
     for row in grade:
         print("  " + " ".join(row))
 
-    print("[num_match] 正在搜索匹配...")
+    print("[num_match] searching for match...")
     rows = grid_cfg["rows"]
     cols = grid_cfg["cols"]
     encontrado = None
@@ -117,15 +122,19 @@ def main():
             break
 
     if encontrado is None:
-        print("[num_match] 未找到匹配")
+        print("[num_match] no match found")
         return
 
     r, c = encontrado
-    print(f"[num_match] 找到匹配: 第{r}行 第{c}列")
+    print(f"[num_match] match found: row {r}, col {c}")
     dr = r - START_ROW
     dc = c - START_COL - 2
-    print(f"[num_match] 移动: dr={dr} dc={dc}")
+    print(f"[num_match] moving: dr={dr} dc={dc}")
     mover_cursor(dr, dc)
-    print("[num_match] 完成")
+    print("[num_match] done")
+
+
+if __name__ == "__main__":
+    main()
 
 
