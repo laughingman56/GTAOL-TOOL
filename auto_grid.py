@@ -4,6 +4,8 @@ import numpy as np
 from PIL import Image
 
 _BINARIZE_THRESHOLD_FACTOR = 1.2
+_TARGET_PAD_SMALL = 10
+_GRID_PAD = 20
 
 
 class GridDetectError(Exception):
@@ -87,7 +89,7 @@ def _coarse_locate(screenshot):
         else:
             tx1, tx2 = 0, sw
 
-        pad = 10
+        pad = _TARGET_PAD_SMALL
         targets.append({
             "x1_small": max(tx1 - pad, 0),
             "y1_small": max(t_y1_small - pad, 0),
@@ -97,12 +99,12 @@ def _coarse_locate(screenshot):
 
     scale_x = w / sw
     scale_y = h / sh
-    pad = 20
+    pad = _GRID_PAD
     grid_region = (
-        max(int(grid_y1_small * scale_y) - pad, 0),
-        min(int(grid_y2_small * scale_y) + pad, h),
         0,
+        max(int(grid_y1_small * scale_y) - pad, 0),
         w,
+        min(int(grid_y2_small * scale_y) + pad, h),
     )
 
     target_regions = []

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 from PIL import Image
-from auto_grid import _binarize, _horizontal_projection, _vertical_projection, _smooth
+from auto_grid import _binarize, _horizontal_projection, _vertical_projection, _smooth, _coarse_locate, GridDetectError
 
 
 def test_binarize_auto_threshold():
@@ -51,9 +51,6 @@ def test_smooth():
     assert np.allclose(result, expected, atol=0.01)
 
 
-from auto_grid import _coarse_locate, GridDetectError
-
-
 def test_coarse_locate_detects_grid():
     img = Image.new("RGB", (400, 300), color=(0, 0, 0))
     from PIL import ImageDraw
@@ -65,14 +62,11 @@ def test_coarse_locate_detects_grid():
             draw.text((x, y), "42", fill=(255, 255, 255))
     grid_region, targets = _coarse_locate(img)
     assert len(grid_region) == 4
-    assert grid_region[0] <= 100 <= grid_region[1]
+    assert grid_region[1] <= 100 <= grid_region[3]
     assert isinstance(targets, list)
 
 
 def test_coarse_locate_dark_image_raises():
     img = Image.new("RGB", (100, 100), color=(0, 0, 0))
-    try:
+    with pytest.raises(GridDetectError):
         _coarse_locate(img)
-        assert False, "should have raised"
-    except GridDetectError:
-        pass
