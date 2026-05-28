@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from PIL import Image
+from PIL import Image, ImageDraw
 from auto_grid import _binarize, _horizontal_projection, _vertical_projection, _smooth, _coarse_locate, GridDetectError
 
 
@@ -53,7 +53,6 @@ def test_smooth():
 
 def test_coarse_locate_detects_grid():
     img = Image.new("RGB", (400, 300), color=(0, 0, 0))
-    from PIL import ImageDraw
     draw = ImageDraw.Draw(img)
     for r in range(8):
         for c in range(10):
