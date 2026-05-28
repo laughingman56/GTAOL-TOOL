@@ -283,3 +283,130 @@ def _split_two_digits(cell_image):
         return split_x
 
     return cw // 2
+
+
+def _detect_targets(screenshot, target_region):
+    x1, y1, x2, y2 = target_region
+    if x2 <= x1 or y2 <= y1:
+        raise GridDetectError("invalid target region")
+
+    roi = screenshot.crop((x1, y1, x2, y2))
+    binary = _binarize(roi)
+    v_proj = _vertical_projection(binary)
+    smoothed = _smooth(v_proj.astype(np.float64), window=3)
+    mean_val = smoothed.mean()
+    threshold = max(mean_val * 0.3, 1.0)
+
+    above = smoothed > threshold
+    changes = np.diff(np.concatenate([[0], above.astype(np.int32), [0]]))
+    starts = np.where(changes == 1)[0]
+    ends = np.where(changes == -1)[0]
+
+    digit_regions = []
+    for s, e in zip(starts, ends):
+        if e - s >= 5:
+            digit_regions.append((s, e))
+
+    if len(digit_regions) < 1:
+        raise GridDetectError("no target digits detected")
+
+    digit_regions.sort(key=lambda r: r[1] - r[0], reverse=True)
+    digit_regions = digit_regions[:2]
+    digit_regions.sort(key=lambda r: r[0])
+
+    targets_cfg = {}
+    names = ["t0", "t1"]
+    for i, (s, e) in enumerate(digit_regions):
+        if i >= 2:
+            break
+        tx1 = x1 + max(s - 2, 0)
+        tx2 = x1 + min(e + 2, x2 - x1)
+        targets_cfg[names[i]] = {
+            "x1": tx1,
+            "y1": y1,
+            "x2": tx2,
+            "y2": y2,
+            "digits": 2,
+        }
+
+    return targets_cfg
+
+
+def detect_grid(screenshot):
+    w, h = screenshot.size
+    if w < 100 or h < 100:
+        raise GridDetectError(f"screenshot too small: {w}x{h}")
+
+    binary_full = _binarize(screenshot)
+    white_ratio = binary_full.sum() / binary_full.size
+    if white_ratio < 0.001:
+        raise GridDetectError("screenshot appears dark/empty")
+
+    grid_region, target_regions = _coarse_locate(screenshot)
+
+    gx1, gy1, gx2, gy2 = grid_region
+    grid_roi = screenshot.crop((gx1, gy1, gx2, gy2))
+
+    y_lines, row_regions = _detect_rows(grid_roi, num_rows=8)
+
+    all_x_lines = []
+    for ry1, ry2 in row_regions:
+        row_img = grid_roi.crop((0, ry1, grid_roi.size[0], ry2))
+        try:
+            x_lines = _detect_columns(row_img, num_cols=10)
+        except GridDetectError:
+            if all_x_lines:
+                x_lines = list(all_x_lines[-1])
+            else:
+                raise
+        all_x_lines.append(x_lines)
+
+    avg_x_lines = []
+    for j in range(10):
+        cols_at_j = [xl[j] for xl in all_x_lines if j < len(xl)]
+        if cols_at_j:
+            avg_x_lines.append(int(np.median(cols_at_j)))
+        elif avg_x_lines:
+            spacing = avg_x_lines[-1] - (avg_x_lines[-2] if len(avg_x_lines) > 1 else 0)
+            avg_x_lines.append(avg_x_lines[-1] + spacing)
+
+    avg_y_lines = []
+    for i in range(8):
+        avg_y_lines.append((row_regions[i][0] + row_regions[i][1]) // 2)
+
+    y_corrected, x_corrected, avg_row_h, avg_cell_w = _equal_distance_correct(
+        avg_y_lines, avg_x_lines
+    )
+
+    grid_cfg = {
+        "x": gx1 + x_corrected[0] - avg_cell_w // 2,
+        "y": gy1 + y_corrected[0] - avg_row_h // 2,
+        "cell_w": avg_cell_w,
+        "cell_h": avg_row_h,
+        "cols": 10,
+        "rows": 8,
+        "cursor_w": 4,
+    }
+
+    targets_cfg = {}
+    if target_regions:
+        for i, tr in enumerate(target_regions[:2]):
+            try:
+                t_cfg = _detect_targets(screenshot, tr)
+                targets_cfg.update(t_cfg)
+            except GridDetectError:
+                if i == 0:
+                    raise
+
+    if not targets_cfg:
+        px = max(grid_cfg["x"] - 300, 0)
+        py = max(grid_cfg["y"] - 80, 0)
+        pw = 600
+        ph = min(80, grid_cfg["y"] - py)
+        try:
+            t_cfg = _detect_targets(screenshot, (px, py, px + pw, py + ph))
+            targets_cfg.update(t_cfg)
+        except GridDetectError:
+            raise GridDetectError("failed to detect targets")
+
+    return targets_cfg, grid_cfg

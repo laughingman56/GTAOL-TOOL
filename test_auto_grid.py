@@ -151,3 +151,29 @@ def test_split_two_digits_gap():
     draw.text((30, 2), "2", fill=(255, 255, 255))
     split = _split_two_digits(img)
     assert 15 <= split <= 35
+
+
+from auto_grid import detect_grid
+
+
+def test_detect_grid_synthetic():
+    img = Image.new("RGB", (800, 600), color=(0, 0, 0))
+    draw = ImageDraw.Draw(img)
+
+    draw.text((350, 50), "42", fill=(255, 255, 255))
+    draw.text((420, 50), "17", fill=(255, 255, 255))
+
+    gx, gy = 100, 150
+    cw, ch = 55, 40
+    for r in range(8):
+        for c in range(10):
+            x = gx + c * cw
+            y = gy + r * ch
+            draw.text((x + 2, y + 2), "42", fill=(255, 255, 255))
+
+    targets_cfg, grid_cfg = detect_grid(img)
+    assert "t0" in targets_cfg
+    assert grid_cfg["cols"] == 10
+    assert grid_cfg["rows"] == 8
+    assert abs(grid_cfg["cell_w"] - cw) <= 5
+    assert abs(grid_cfg["cell_h"] - ch) <= 5
