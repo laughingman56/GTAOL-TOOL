@@ -99,9 +99,9 @@ class ConfigManager:
             "cayo": {"name": "佩岛指纹", "key": "F11", "father": "all_cayo", "enabled": False},
 
             #"all_cayo": {"name": "佩岛合集", "key": "NONE", "enabled": False},
-            "cayo_find_num": {"name": "佩岛前置武器库找数字", "key": "", "father": "all_cayo", "enabled": False},
+            "cayo_find_num": {"name": "佩岛前置武器库找数字", "key": "",  "enabled": False},
             #"other_unlock": {"name": "其他开锁", "key": "NONE", "enabled": False},
-            "assassin_6": {"name": "末日2卡暗杀6", "key": "]", "father": "other_unlock","enabled": False},
+            "assassin_6": {"name": "末日2卡暗杀6", "key": "]", "enabled": False},
 
             "photo": {"name": "拍照攀爬", "key": "L", "enabled": False},
 

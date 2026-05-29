@@ -76,40 +76,35 @@ def main():
     START_ROW = 3
     START_COL = 3
 
-    screenshot = capturar_tela()
-
-    try:
-        from auto_grid import detect_grid, GridDetectError
-        targets_cfg, grid_cfg = detect_grid(screenshot)
-        print("[num_match] auto grid detection succeeded")
-    except (ImportError, GridDetectError) as e:
-        print(f"[num_match] auto detection failed ({e}), falling back to config")
-        config = load_config("num_config.json")
-        targets_cfg, grid_cfg = _adapt_config(config)
+    config = load_config("num_config.json")
+    targets_cfg, grid_cfg = _adapt_config(config)
 
     if not targets_cfg:
-        print("[num_match] no targets config")
+        print("[num_match] targets config not found")
         return
     if not grid_cfg:
-        print("[num_match] no grid config")
+        print("[num_match] grid config not found")
         return
 
-    print("[num_match] recognizing targets...")
+    print("[num_match] capturando tela...")
+    screenshot = capturar_tela()
+
+    print("[num_match] reconhecendo alvos...")
     targets = recognize(screenshot, targets_cfg)
     t0 = targets.get("t0", "")
     t1 = targets.get("t1", "")
     if not t0 or not t1:
-        print(f"[num_match] target recognition failed: t0={t0} t1={t1}")
+        print(f"[num_match] falha ao reconhecer alvos: t0={t0} t1={t1}")
         return
-    print(f"[num_match] targets: t0={t0} t1={t1}")
+    print(f"[num_match] alvos: t0={t0} t1={t1}")
 
-    print("[num_match] recognizing grid...")
+    print("[num_match] reconhecendo grade...")
     grade = grid_recognize(screenshot, grid_cfg)
-    print("[num_match] grid:")
+    print("[num_match] grade reconhecida:")
     for row in grade:
         print("  " + " ".join(row))
 
-    print("[num_match] searching for match...")
+    print("[num_match] buscando correspondencia...")
     rows = grid_cfg["rows"]
     cols = grid_cfg["cols"]
     encontrado = None
@@ -122,19 +117,15 @@ def main():
             break
 
     if encontrado is None:
-        print("[num_match] no match found")
+        print("[num_match] correspondencia nao encontrada")
         return
 
     r, c = encontrado
-    print(f"[num_match] match found: row {r}, col {c}")
+    print(f"[num_match] correspondencia encontrada: linha={r} coluna={c}")
     dr = r - START_ROW
     dc = c - START_COL - 2
-    print(f"[num_match] moving: dr={dr} dc={dc}")
+    print(f"[num_match] movendo: dr={dr} dc={dc}")
     mover_cursor(dr, dc)
-    print("[num_match] done")
-
-
-if __name__ == "__main__":
-    main()
+    print("[num_match] concluido")
 
 

@@ -24,6 +24,10 @@ import sudden_stop
 import ka_ceo
 import key_setting
 import custom_script
+import num_match
+import all_cayo
+import other_unlock
+import assassin_6
 
 from concurrent.futures import ThreadPoolExecutor
 
@@ -72,7 +76,10 @@ class ScriptExecutor:
             key_setting.show_settings_ui(parent_window)
         elif func_id == "custom_script":
             custom_script.show_settings_ui(parent_window)
-
+        elif func_id == "all_cayo":
+            all_cayo.show_settings_ui(parent_window)
+        elif func_id == "other_unlock":
+            other_unlock.show_settings_ui(parent_window)
 
 
         else:
@@ -165,6 +172,14 @@ class ScriptExecutor:
             elif func_id == "cayo":
                 print(">>> 执行佩岛指纹破解...")
                 cayo_finger.CayoLogic.cayo_finger_run()
+
+            elif func_id == "cayo_find_num":
+                print(">>> 执行佩岛前置找数字...")
+                num_match.main()
+
+            elif func_id == "assassin_6":
+                print(">>> 执行末日2卡暗杀6...")
+                assassin_6.main()
 
             elif func_id == "photo":
                 print(">>> 执行拍照攀爬动作...")

@@ -16,7 +16,7 @@ import time
 from PIL import Image, ImageChops
 import ctypes  # 新增
 import  io
-import ka_ceo
+import ka_cha_chuan
 
 
 def show_settings_ui(parent_window):
@@ -237,7 +237,7 @@ def eat_pill(sct=None):
     quick_press(m_menu)
     time.sleep(0.3)  # 可根据实际情况调整
 
-    is_ceo = ka_ceo.judge(m_ROI,500,600,sct)
+    is_ceo = ka_cha_chuan.m_ceo(sct)
 
     if is_ceo:
         quick_press("enter")
@@ -527,7 +527,7 @@ def flight_thermal(sct=None):
     quick_press(m_menu)
     time.sleep(0.3)  # 可根据实际情况调整
 
-    is_ceo = ka_ceo.judge(m_ROI,500,600,sct)
+    is_ceo = ka_cha_chuan.m_ceo(sct)
 
     if not is_ceo:
 
@@ -591,7 +591,7 @@ def ghost(sct=None):
     quick_press(m_menu)
     time.sleep(0.3)  # 可根据实际情况调整
 
-    is_ceo = ka_ceo.judge(m_ROI,500,600,sct)
+    is_ceo = ka_cha_chuan.m_ceo(sct)
 
     if is_ceo:
         quick_press("enter")

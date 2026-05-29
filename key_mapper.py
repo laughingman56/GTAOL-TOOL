@@ -53,7 +53,7 @@ class KeyMapper:
         "=": 0xBB,  # VK_OEM_PLUS
         "[": 0xDB,  # VK_OEM_4
         "]": 0xDD,  # VK_OEM_6
-        "\\": 0xDC,  # VK_OEM_5 (反斜杠)
+        "|": 0xDC,  # VK_OEM_5 (反斜杠)
         ";": 0xBA,  # VK_OEM_1
         "'": 0xDE,  # VK_OEM_7 (单引号)
         "`": 0xC0,  # VK_OEM_3 (反引号/波浪号)

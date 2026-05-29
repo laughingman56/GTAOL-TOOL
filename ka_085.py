@@ -273,6 +273,7 @@ def run_natdown():
 
     # 保险命令，进程模式断开服务器链接
     command = f'"{exe_path}" -c -p "{gta_path}" -ip 127.0.0.1 -proto tcp'
+    #command = f'"{exe_path}" -c -p "{gta_path}" -proto tcp'
 
     try:
         # 使用 subprocess.Popen 相当于易语言运行命令参数中的“假”（不等待，异步执行）
