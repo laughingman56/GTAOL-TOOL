@@ -171,7 +171,11 @@ def preprocess(image, size=24):
     img = image.convert("L")
     img = img.resize((size, size), Image.Resampling.LANCZOS)
     pixels = list(img.tobytes())
-    return [p / 255.0 for p in pixels]
+    p_min = min(pixels)
+    p_max = max(pixels)
+    if p_max > p_min:
+        return [(p - p_min) / (p_max - p_min) for p in pixels]
+    return [0.0] * len(pixels)
 
 
 _weights = None
