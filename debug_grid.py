@@ -6,7 +6,7 @@ from find_num import load_config, select_preset, recognize, grid_recognize
 
 def draw_debug(screenshot_path, config_path="num_config.json", output_path="debug_grid.png"):
     config = load_config(config_path)
-    targets_cfg, grid_cfg, base_w, base_h = select_preset(config)
+    targets_cfg, grid_cfg, *_ = select_preset(config)
 
     if not targets_cfg or not grid_cfg:
         print("[debug_grid] targets or grid config missing")
