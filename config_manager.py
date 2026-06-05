@@ -94,16 +94,20 @@ class ConfigManager:
             "refresh_cha_chuan_bot": {"name": "自动刷新差传", "key": "F6", "enabled": True},
             "ka_ceo": {"name": "卡CEO", "key": ";", "danei": True, "enabled": True},
 
-            "casino": {"name": "赌场指纹", "key": "F9", "enabled": True},
-            "security": {"name": "保安圆点", "key": "F10", "enabled": True},
-            "cayo": {"name": "佩岛指纹", "key": "F11", "father": "all_cayo", "enabled": False},
+            "all_casino": {"name": "赌场合集", "key": "NONE", "enabled": True},
+            "casino": {"name": "赌场指纹", "key": "F9","father": "all_casino", "enabled": True},
+            "security": {"name": "保安圆点", "key": "F10", "father": "all_casino","enabled": True},
+            "photo": {"name": "拍照攀爬", "key": "L", "father": "all_casino","enabled": False},
 
-            #"all_cayo": {"name": "佩岛合集", "key": "NONE", "enabled": False},
-            "cayo_find_num": {"name": "佩岛前置武器库找数字", "key": "",  "enabled": False},
-            #"other_unlock": {"name": "其他开锁", "key": "NONE", "enabled": False},
+            "all_cayo": {"name": "佩岛合集", "key": "NONE", "enabled": True},
+            "cayo": {"name": "佩岛指纹", "key": "F11", "father": "all_cayo", "enabled": False},
+            "cayo_find_num": {"name": "佩岛前置武器库找数字", "key": "","father": "all_cayo",   "enabled": False},
+
+            "other_unlock": {"name": "其他开锁", "key": "NONE", "enabled": True},
             "assassin_6": {"name": "末日2卡暗杀6", "key": "]", "enabled": False},
 
-            "photo": {"name": "拍照攀爬", "key": "L", "enabled": False},
+
+
 
             "nat_down": {"name": "断网", "key": "NUM 十", "rule":0,"time_limited":True,"time":20,"enabled": False},
             "sudden_stop":{"name": "瞬间悬停", "key": "NUM .","style":0, "enabled": False},

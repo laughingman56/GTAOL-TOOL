@@ -39,7 +39,7 @@ class GTAUnlockApp(ctk.CTk):
         data = self.config.get_all_data()
 
         # 这里的顺序决定显示顺序
-        func_list = ["ka_cha_chuan","casino","cha_chuan_1","security","cha_chuan_2", "cayo", "refresh_cha_chuan_bot","cayo_find_num","assassin_6","photo","nat_down","sudden_stop","phone","mk2","fight","ka_ceo","low_fps","custom_script","hang_up_and_key_setting","update","instruction","console_visible"]
+        func_list = ["ka_cha_chuan","ka_ceo","cha_chuan_1","all_casino","cha_chuan_2","all_cayo","refresh_cha_chuan_bot","other_unlock","nat_down","sudden_stop","phone","mk2","fight","low_fps","custom_script","hang_up_and_key_setting","update","instruction","console_visible"]
 
 
         for index, func_id in enumerate(func_list):
@@ -89,7 +89,7 @@ class GTAUnlockApp(ctk.CTk):
                 height=45,
                 corner_radius=0
             )
-            if func_id in ["low_fps", "instruction","phone","mk2","update","fight","hang_up_and_key_setting","custom_script","other_unlock","all_cayo","console_visible"]:
+            if func_id in ["low_fps", "instruction","phone","mk2","update","fight","hang_up_and_key_setting","custom_script","other_unlock","all_cayo","console_visible","all_casino",]:
                 btn_key.configure(text="设置项", state="disabled", fg_color="#E0E0E0")
             else:
                 btn_key.configure(command=lambda f=func_id: self.request_recording(f))

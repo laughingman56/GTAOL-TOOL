@@ -7,7 +7,7 @@ def show_settings_ui(parent_window):
 
     # 创建置顶设置窗口
     settings_window = ctk.CTkToplevel(parent_window)
-    settings_window.title("其他开锁设置")
+    settings_window.title("赌场合集设置")
     settings_window.geometry("400x300")
     settings_window.resizable(False, False)
     settings_window.transient(parent_window)  # 跟随父窗口
@@ -36,7 +36,7 @@ def show_settings_ui(parent_window):
         lbl.grid(row=0, column=col, padx=15, pady=(15, 10), sticky="w")
 
     # 三个联系人配置
-    contact_ids = ["assassin_6"]
+    contact_ids = ["casino","security","photo"]
     #"call_mk2","send_mk2","call_mk2_truck","call_sparrow","call_whale","send_sparrow","call_car","open_door"
     #"m_menu", "weapon_menu", "no_weapon", "shotgun_weapon", "rpg_weapon", "c4_weapon", "pistol_weapon", "sniper_weapon"
 
@@ -138,20 +138,3 @@ def show_settings_ui(parent_window):
         switch.configure(command=lambda cid=contact_id, sw=switch: toggle_switch(cid, sw))
         # 左边的 padding 设为 0，右边保持 10
         switch.grid(row=row_idx, column=2, padx=(20, 20), pady=8, sticky="w")
-
-
-
-
-
-
-#------------------------------执行层---------------------------
-import pydirectinput
-import time
-def assassin_6_main():
-    pydirectinput.PAUSE = 0
-    pydirectinput.keyDown('esc')
-    time.sleep(2.0)
-    pydirectinput.keyUp('esc')
-    pydirectinput.keyDown('e')
-    time.sleep(0.1)
-    pydirectinput.keyUp('e')

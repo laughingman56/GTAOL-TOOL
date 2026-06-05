@@ -27,7 +27,8 @@ import custom_script
 import num_match
 import all_cayo
 import other_unlock
-import assassin_6
+import all_casino
+
 
 from concurrent.futures import ThreadPoolExecutor
 
@@ -80,7 +81,8 @@ class ScriptExecutor:
             all_cayo.show_settings_ui(parent_window)
         elif func_id == "other_unlock":
             other_unlock.show_settings_ui(parent_window)
-
+        elif func_id == "all_casino":
+            all_casino.show_settings_ui(parent_window)
 
         else:
             print(f"功能 {func_id} 未配置设置界面")
@@ -179,7 +181,7 @@ class ScriptExecutor:
 
             elif func_id == "assassin_6":
                 print(">>> 执行末日2卡暗杀6...")
-                assassin_6.main()
+                other_unlock.assassin_6_main()
 
             elif func_id == "photo":
                 print(">>> 执行拍照攀爬动作...")

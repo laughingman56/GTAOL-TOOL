@@ -5,7 +5,7 @@ from find_num import load_config, recognize, grid_recognize
 from mss_dpi import ResolutionAdapter
 
 DELAY = 0
-pydirectinput.PAUSE = 0.02
+pydirectinput.PAUSE = 0
 pydirectinput.FAILSAFE = False
 
 
