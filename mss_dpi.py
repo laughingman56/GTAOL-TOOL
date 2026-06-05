@@ -35,7 +35,8 @@ class ResolutionAdapter:
         return (0, 0, sw, sh)
 
     @classmethod
-    def get_mss_config(cls, base_config_tuple, base_w=None, base_h=None):
+    def get_mss_config(cls, base_config_tuple, base_w=None, base_h=None,
+                       target_w=None, target_h=None):
         """ 直接返回 mss 需要的字典格式 """
         if base_w is None: base_w = cls.BASE_W
         if base_h is None: base_h = cls.BASE_H
@@ -43,7 +44,10 @@ class ResolutionAdapter:
         base_cx = base_w / 2
         base_cy = base_h / 2
 
-        win_x, win_y, win_w, win_h = cls.get_game_window_rect()
+        if target_w is not None and target_h is not None:
+            win_x, win_y, win_w, win_h = 0, 0, target_w, target_h
+        else:
+            win_x, win_y, win_w, win_h = cls.get_game_window_rect()
         scale_factor = win_h / base_h
         orig_x, orig_y, orig_w, orig_h = base_config_tuple
 
