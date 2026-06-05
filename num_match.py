@@ -1,7 +1,7 @@
 import mss
 import pydirectinput
 from PIL import Image
-from find_num import load_config, recognize, grid_recognize
+from find_num import load_config, select_preset, recognize, grid_recognize
 from mss_dpi import ResolutionAdapter
 
 DELAY = 0
@@ -42,13 +42,15 @@ def _from_mss_config(cfg):
 
 
 def _adapt_config(config):
-    targets_cfg = config.get("targets", {})
-    grid_cfg = config.get("grid", {})
+    targets_cfg, grid_cfg, base_w, base_h = select_preset(config)
 
     adapted_targets = {}
     for name, region in targets_cfg.items():
         x1, y1, x2, y2 = region["x1"], region["y1"], region["x2"], region["y2"]
-        mss_cfg = ResolutionAdapter.get_mss_config(_to_base_region(x1, y1, x2, y2))
+        mss_cfg = ResolutionAdapter.get_mss_config(
+            _to_base_region(x1, y1, x2, y2),
+            base_w=base_w, base_h=base_h
+        )
         adapted_region = _from_mss_config(mss_cfg)
         adapted_region["digits"] = region.get("digits", 2)
         adapted_targets[name] = adapted_region
@@ -57,7 +59,10 @@ def _adapt_config(config):
     rows = grid_cfg["rows"]
     total_w = cols * grid_cfg["cell_w"]
     total_h = rows * grid_cfg["cell_h"]
-    mss_cfg = ResolutionAdapter.get_mss_config((grid_cfg["x"], grid_cfg["y"], total_w, total_h))
+    mss_cfg = ResolutionAdapter.get_mss_config(
+        (grid_cfg["x"], grid_cfg["y"], total_w, total_h),
+        base_w=base_w, base_h=base_h
+    )
 
     adapted_grid = {
         "x": mss_cfg["left"],
