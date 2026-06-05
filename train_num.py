@@ -143,11 +143,14 @@ class CNNModel(nn.Module):
     def __init__(self):
         super().__init__()
         self.conv1 = nn.Conv2d(1, 8, 3, padding=0)
-        self.fc1 = nn.Linear(8 * 11 * 11, 64)
+        self.conv2 = nn.Conv2d(8, 16, 3, padding=0)
+        self.fc1 = nn.Linear(16 * 4 * 4, 64)
         self.fc2 = nn.Linear(64, 10)
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
+        x = F.max_pool2d(x, 2)
+        x = F.relu(self.conv2(x))
         x = F.max_pool2d(x, 2)
         x = x.view(x.size(0), -1)
         x = F.relu(self.fc1(x))
@@ -251,6 +254,8 @@ def export_weights(model, path="num_weights.json", save_torch=True):
     w = {
         "conv1_w": model.conv1.weight.detach().cpu().numpy().tolist(),
         "conv1_b": model.conv1.bias.detach().cpu().numpy().tolist(),
+        "conv2_w": model.conv2.weight.detach().cpu().numpy().tolist(),
+        "conv2_b": model.conv2.bias.detach().cpu().numpy().tolist(),
         "fc1_w": model.fc1.weight.detach().cpu().numpy().tolist(),
         "fc1_b": model.fc1.bias.detach().cpu().numpy().tolist(),
         "fc2_w": model.fc2.weight.detach().cpu().numpy().tolist(),

@@ -107,17 +107,26 @@ def forward_cnn(x_flat, w):
     IMG_SIZE = int(math.sqrt(len(x_flat)))
     x_2d = [x_flat[i * IMG_SIZE:(i + 1) * IMG_SIZE] for i in range(IMG_SIZE)]
 
-    conv_out = _conv2d_single(x_2d, w["conv1_w"], w["conv1_b"])
-    for f in range(len(conv_out)):
-        for i in range(len(conv_out[f])):
-            for j in range(len(conv_out[f][i])):
-                conv_out[f][i][j] = max(0.0, conv_out[f][i][j])
+    conv1_out = _conv2d_single(x_2d, w["conv1_w"], w["conv1_b"])
+    for f in range(len(conv1_out)):
+        for i in range(len(conv1_out[f])):
+            for j in range(len(conv1_out[f][i])):
+                conv1_out[f][i][j] = max(0.0, conv1_out[f][i][j])
 
-    pooled = _maxpool2d(conv_out, size=2)
+    pooled1 = _maxpool2d(conv1_out, size=2)
+
+    conv2_out = _conv2d_single(pooled1, w["conv2_w"], w["conv2_b"])
+    for f in range(len(conv2_out)):
+        for i in range(len(conv2_out[f])):
+            for j in range(len(conv2_out[f][i])):
+                conv2_out[f][i][j] = max(0.0, conv2_out[f][i][j])
+
+    pooled2 = _maxpool2d(conv2_out, size=2)
+
     flat = []
-    for c in range(len(pooled)):
-        for i in range(len(pooled[c])):
-            flat.extend(pooled[c][i])
+    for c in range(len(pooled2)):
+        for i in range(len(pooled2[c])):
+            flat.extend(pooled2[c][i])
 
     fc1_out_size = len(w["fc1_b"])
     h1 = [max(0.0, _dot(flat, w["fc1_w"][i]) + w["fc1_b"][i])
@@ -125,7 +134,7 @@ def forward_cnn(x_flat, w):
 
     fc2_out_size = len(w["fc2_b"])
     scores = [_dot(h1, w["fc2_w"][i]) + w["fc2_b"][i]
-              for i in range(fc2_out_size)]
+               for i in range(fc2_out_size)]
     max_s = max(scores)
     exps = [math.exp(s - max_s) for s in scores]
     total = sum(exps)
