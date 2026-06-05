@@ -58,31 +58,29 @@ def _conv2d(x, filters_4d, biases):
     KH = len(filters_4d[0][0])
     KW = len(filters_4d[0][0][0])
 
-    if isinstance(x[0], list):
+    first_row = x[0]
+    if isinstance(first_row, list) and len(first_row) > 0 and isinstance(first_row[0], list):
         x_chw = x
-        C_in_x = len(x_chw)
     else:
         x_chw = [x]
-        C_in_x = 1
 
     H = len(x_chw[0])
     W = len(x_chw[0][0])
-    OH = H - KH + 1
-    OW = W - KW + 1
-    C_in = min(C_in_f, C_in_x)
+    C_in = min(C_in_f, len(x_chw))
 
     out = []
     for f in range(len(filters_4d)):
         chan = []
-        for i in range(OH):
+        for i in range(H - KH + 1):
             row = []
-            for j in range(OW):
+            for j in range(W - KW + 1):
                 s = biases[f]
                 for ci in range(C_in):
                     f_ci = filters_4d[f][ci]
+                    x_ci = x_chw[ci]
                     for ki in range(KH):
                         f_row = f_ci[ki]
-                        x_row = x_chw[ci][i + ki]
+                        x_row = x_ci[i + ki]
                         for kj in range(KW):
                             s += f_row[kj] * x_row[j + kj]
                 row.append(s)
