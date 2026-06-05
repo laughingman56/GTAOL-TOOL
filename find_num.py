@@ -53,24 +53,38 @@ def load_weights(path="num_weights.json"):
             ) from e
 
 
-def _conv2d_single(x_2d, filters_4d, biases):
-    C_out = len(filters_4d)
+def _conv2d(x, filters_4d, biases):
+    C_in_f = len(filters_4d[0])
     KH = len(filters_4d[0][0])
     KW = len(filters_4d[0][0][0])
-    H = len(x_2d)
-    W = len(x_2d[0])
+
+    if isinstance(x[0], list):
+        x_chw = x
+        C_in_x = len(x_chw)
+    else:
+        x_chw = [x]
+        C_in_x = 1
+
+    H = len(x_chw[0])
+    W = len(x_chw[0][0])
     OH = H - KH + 1
     OW = W - KW + 1
+    C_in = min(C_in_f, C_in_x)
+
     out = []
-    for f in range(C_out):
+    for f in range(len(filters_4d)):
         chan = []
         for i in range(OH):
             row = []
             for j in range(OW):
                 s = biases[f]
-                for ki in range(KH):
-                    for kj in range(KW):
-                        s += filters_4d[f][0][ki][kj] * x_2d[i + ki][j + kj]
+                for ci in range(C_in):
+                    f_ci = filters_4d[f][ci]
+                    for ki in range(KH):
+                        f_row = f_ci[ki]
+                        x_row = x_chw[ci][i + ki]
+                        for kj in range(KW):
+                            s += f_row[kj] * x_row[j + kj]
                 row.append(s)
             chan.append(row)
         out.append(chan)
@@ -107,7 +121,7 @@ def forward_cnn(x_flat, w):
     IMG_SIZE = int(math.sqrt(len(x_flat)))
     x_2d = [x_flat[i * IMG_SIZE:(i + 1) * IMG_SIZE] for i in range(IMG_SIZE)]
 
-    conv1_out = _conv2d_single(x_2d, w["conv1_w"], w["conv1_b"])
+    conv1_out = _conv2d(x_2d, w["conv1_w"], w["conv1_b"])
     for f in range(len(conv1_out)):
         for i in range(len(conv1_out[f])):
             for j in range(len(conv1_out[f][i])):
@@ -115,7 +129,7 @@ def forward_cnn(x_flat, w):
 
     pooled1 = _maxpool2d(conv1_out, size=2)
 
-    conv2_out = _conv2d_single(pooled1, w["conv2_w"], w["conv2_b"])
+    conv2_out = _conv2d(pooled1, w["conv2_w"], w["conv2_b"])
     for f in range(len(conv2_out)):
         for i in range(len(conv2_out[f])):
             for j in range(len(conv2_out[f][i])):
