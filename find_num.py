@@ -1,6 +1,7 @@
 import math
 import json
 import os
+from mss_dpi import ResolutionAdapter
 
 
 def load_config(path="num_config.json"):
@@ -13,6 +14,26 @@ def load_config(path="num_config.json"):
         except json.JSONDecodeError:
             print(f"[find_num] invalid JSON in config: {path}")
             return {}
+
+
+def select_preset(config):
+    presets = config.get("presets")
+    if not presets:
+        return config.get("targets", {}), config.get("grid", {}), 2560, 1440
+
+    presets = list(presets.values())
+    sw, sh = ResolutionAdapter.get_screen_size()
+    actual_ratio = sw / sh
+
+    best = presets[0]
+    best_diff = abs(best["base_w"] / best["base_h"] - actual_ratio)
+    for p in presets[1:]:
+        d = abs(p["base_w"] / p["base_h"] - actual_ratio)
+        if d < best_diff:
+            best_diff = d
+            best = p
+
+    return best["targets"], best["grid"], best["base_w"], best["base_h"]
 
 
 def load_weights(path="num_weights.json"):
