@@ -7,6 +7,19 @@ import win32api
 from PIL import Image
 
 
+def to_base_region(x1, y1, x2, y2):
+    return (x1, y1, x2 - x1, y2 - y1)
+
+
+def from_mss_config(cfg):
+    return {
+        "x1": cfg["left"],
+        "y1": cfg["top"],
+        "x2": cfg["left"] + cfg["width"],
+        "y2": cfg["top"] + cfg["height"],
+    }
+
+
 # ================= 分辨率适配器 (修复版 - MSS适配) =================
 
 class ResolutionAdapter:

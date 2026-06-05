@@ -2,7 +2,7 @@ import mss
 import pydirectinput
 from PIL import Image
 from find_num import load_config, select_preset, recognize, grid_recognize
-from mss_dpi import ResolutionAdapter
+from mss_dpi import ResolutionAdapter, to_base_region, from_mss_config
 
 DELAY = 0
 pydirectinput.PAUSE = 0
@@ -28,19 +28,6 @@ def mover_cursor(dr, dc):
         pydirectinput.press("left", presses=-dc, interval=DELAY)
 
 
-def _to_base_region(x1, y1, x2, y2):
-    return (x1, y1, x2 - x1, y2 - y1)
-
-
-def _from_mss_config(cfg):
-    return {
-        "x1": cfg["left"],
-        "y1": cfg["top"],
-        "x2": cfg["left"] + cfg["width"],
-        "y2": cfg["top"] + cfg["height"],
-    }
-
-
 def _adapt_config(config):
     targets_cfg, grid_cfg, base_w, base_h = select_preset(config)
 
@@ -48,10 +35,10 @@ def _adapt_config(config):
     for name, region in targets_cfg.items():
         x1, y1, x2, y2 = region["x1"], region["y1"], region["x2"], region["y2"]
         mss_cfg = ResolutionAdapter.get_mss_config(
-            _to_base_region(x1, y1, x2, y2),
+            to_base_region(x1, y1, x2, y2),
             base_w=base_w, base_h=base_h
         )
-        adapted_region = _from_mss_config(mss_cfg)
+        adapted_region = from_mss_config(mss_cfg)
         adapted_region["digits"] = region.get("digits", 2)
         adapted_targets[name] = adapted_region
 

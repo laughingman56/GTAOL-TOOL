@@ -1,21 +1,7 @@
 import sys
-import os
 from PIL import Image, ImageDraw, ImageFont
 from find_num import load_config, select_preset, recognize, grid_recognize
-from mss_dpi import ResolutionAdapter
-
-
-def _to_base_region(x1, y1, x2, y2):
-    return (x1, y1, x2 - x1, y2 - y1)
-
-
-def _from_mss_config(cfg):
-    return {
-        "x1": cfg["left"],
-        "y1": cfg["top"],
-        "x2": cfg["left"] + cfg["width"],
-        "y2": cfg["top"] + cfg["height"],
-    }
+from mss_dpi import ResolutionAdapter, to_base_region, from_mss_config
 
 
 def draw_debug(screenshot_path, config_path="num_config.json", output_path="debug_grid.png"):
@@ -32,11 +18,11 @@ def draw_debug(screenshot_path, config_path="num_config.json", output_path="debu
     scaled_targets = {}
     for name, region in targets_cfg.items():
         mss_cfg = ResolutionAdapter.get_mss_config(
-            _to_base_region(region["x1"], region["y1"], region["x2"], region["y2"]),
+            to_base_region(region["x1"], region["y1"], region["x2"], region["y2"]),
             base_w=base_w, base_h=base_h,
             target_w=sw, target_h=sh
         )
-        r = _from_mss_config(mss_cfg)
+        r = from_mss_config(mss_cfg)
         r["digits"] = region.get("digits", 2)
         scaled_targets[name] = r
 
