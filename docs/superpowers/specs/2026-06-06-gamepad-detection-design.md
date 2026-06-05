@@ -50,7 +50,7 @@ def _check_gamepad_activity(self):
         return False
 
     # 热插拔检测
-    count = pygame.joystick.get_count()
+    count = self.pygame.joystick.get_count()
     if count != self._joystick_count:
         self._joystick_count = count
         self._joysticks = []
@@ -58,14 +58,14 @@ def _check_gamepad_activity(self):
     # 初始化新检测到的手柄
     for i in range(count):
         if i >= len(self._joysticks) or self._joysticks[i] is None:
-            js = pygame.joystick.Joystick(i)
+            js = self.pygame.joystick.Joystick(i)
             js.init()
             if len(self._joysticks) <= i:
                 self._joysticks.append(js)
             else:
                 self._joysticks[i] = js
 
-    pygame.event.pump()
+    self.pygame.event.pump()
 
     for js in self._joysticks:
         if js is None:
@@ -100,15 +100,17 @@ def _check_gamepad_activity(self):
 | 手柄中途断开 | 热插拔逻辑重建列表，断开的手柄不再遍历 |
 | pydirectinput/pygame 冲突 | 两者独立运行在不同子系统，不会冲突 |
 
-`__init__` 中导入方式：
+`__init__` 中导入方式（pygame 存入 `self.pygame` 供其他方法访问）：
 ```python
 try:
     import pygame
-    pygame.init()
-    pygame.joystick.init()
+    self.pygame = pygame
+    self.pygame.init()
+    self.pygame.joystick.init()
     self._gamepad_available = True
 except (ImportError, Exception):
     self._gamepad_available = False
+    self.pygame = None
 ```
 
 ## 测试要点
