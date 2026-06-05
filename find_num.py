@@ -25,7 +25,7 @@ def select_preset(config, target_w=None, target_h=None):
     if target_w is not None and target_h is not None:
         sw, sh = target_w, target_h
     else:
-        sw, sh = ResolutionAdapter.get_screen_size()
+        _, _, sw, sh = ResolutionAdapter.get_game_window_rect()
     actual_ratio = sw / sh
 
     best = presets[0]
