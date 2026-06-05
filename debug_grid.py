@@ -5,15 +5,15 @@ from mss_dpi import ResolutionAdapter, to_base_region, from_mss_config
 
 
 def draw_debug(screenshot_path, config_path="num_config.json", output_path="debug_grid.png"):
+    screenshot = Image.open(screenshot_path)
+    sw, sh = screenshot.size
+
     config = load_config(config_path)
-    targets_cfg, grid_cfg, base_w, base_h = select_preset(config)
+    targets_cfg, grid_cfg, base_w, base_h = select_preset(config, target_w=sw, target_h=sh)
 
     if not targets_cfg or not grid_cfg:
         print("[debug_grid] targets or grid config missing")
         return
-
-    screenshot = Image.open(screenshot_path)
-    sw, sh = screenshot.size
 
     scaled_targets = {}
     for name, region in targets_cfg.items():

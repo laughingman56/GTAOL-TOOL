@@ -16,13 +16,16 @@ def load_config(path="num_config.json"):
             return {}
 
 
-def select_preset(config):
+def select_preset(config, target_w=None, target_h=None):
     presets = config.get("presets")
     if not presets:
         return config.get("targets", {}), config.get("grid", {}), 2560, 1440
 
     presets = list(presets.values())
-    sw, sh = ResolutionAdapter.get_screen_size()
+    if target_w is not None and target_h is not None:
+        sw, sh = target_w, target_h
+    else:
+        sw, sh = ResolutionAdapter.get_screen_size()
     actual_ratio = sw / sh
 
     best = presets[0]
