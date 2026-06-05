@@ -283,23 +283,24 @@ def load_pytorch_model(path):
 def collect_samples(screenshot_path, config_path="num_config.json", output_dir="num_samples"):
     import sys
     sys.path.insert(0, os.path.dirname(__file__))
-    from find_num import load_config
+    from find_num import load_config, select_preset
+    from mss_dpi import ResolutionAdapter, to_base_region, from_mss_config
 
     screenshot = Image.open(screenshot_path)
+    sw, sh = screenshot.size
+
     config = load_config(config_path)
+    targets_cfg, grid_cfg, base_w, base_h = select_preset(config, target_w=sw, target_h=sh)
     os.makedirs(output_dir, exist_ok=True)
 
-    targets_cfg = config.get("targets", {})
-    grid_cfg = config.get("grid", {})
-
     for name, region in targets_cfg.items():
-        x1 = region.get("x1")
-        y1 = region.get("y1")
-        x2 = region.get("x2")
-        y2 = region.get("y2")
-        if None in (x1, y1, x2, y2):
-            print(f"  [warn] missing coords for target: {name}")
-            continue
+        mss_cfg = ResolutionAdapter.get_mss_config(
+            to_base_region(region["x1"], region["y1"], region["x2"], region["y2"]),
+            base_w=base_w, base_h=base_h,
+            target_w=sw, target_h=sh
+        )
+        r = from_mss_config(mss_cfg)
+        x1, y1, x2, y2 = r["x1"], r["y1"], r["x2"], r["y2"]
         crop = screenshot.crop((x1, y1, x2, y2))
         fpath = os.path.join(output_dir, f"{name}.png")
         crop.save(fpath)
@@ -313,12 +314,19 @@ def collect_samples(screenshot_path, config_path="num_config.json", output_dir="
         print(f"Saved {name}_L.png, {name}_R.png")
 
     if grid_cfg:
-        gx = grid_cfg["x"]
-        gy = grid_cfg["y"]
-        cw = grid_cfg["cell_w"]
-        ch = grid_cfg["cell_h"]
         cols = grid_cfg["cols"]
         rows = grid_cfg["rows"]
+        total_w = cols * grid_cfg["cell_w"]
+        total_h = rows * grid_cfg["cell_h"]
+        mss_cfg = ResolutionAdapter.get_mss_config(
+            (grid_cfg["x"], grid_cfg["y"], total_w, total_h),
+            base_w=base_w, base_h=base_h,
+            target_w=sw, target_h=sh
+        )
+        gx = mss_cfg["left"]
+        gy = mss_cfg["top"]
+        cw = mss_cfg["width"] // cols
+        ch = mss_cfg["height"] // rows
 
         for r in range(rows):
             for c in range(cols):
