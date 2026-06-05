@@ -1,3 +1,5 @@
+import time
+
 import mss
 import pydirectinput
 from PIL import Image
@@ -5,7 +7,7 @@ from find_num import load_config, select_preset, recognize, grid_recognize
 from mss_dpi import ResolutionAdapter, to_base_region, from_mss_config
 
 DELAY = 0
-pydirectinput.PAUSE = 0
+pydirectinput.PAUSE = 0.02
 pydirectinput.FAILSAFE = False
 
 
@@ -115,9 +117,14 @@ def main():
     r, c = encontrado
     print(f"[num_match] correspondencia encontrada: linha={r} coluna={c}")
     dr = r - START_ROW
-    dc = c - START_COL - 2
+    dc = c - START_COL - 3
     print(f"[num_match] movendo: dr={dr} dc={dc}")
     mover_cursor(dr, dc)
+
+    for i in range(3):
+        time.sleep(0.5)
+        pydirectinput.press("enter")
+        time.sleep(0.5)
     print("[num_match] concluido")
 
 
