@@ -11,7 +11,7 @@ from config_manager import ConfigManager
 
 # ================= 配置区域 =================
 # 当前脚本的版本号（每次发布新版时修改这里）
-CURRENT_VERSION = "1.1.6"
+CURRENT_VERSION = "1.1.7"
 
 # Gitee 原始文件直链
 VERSION_URL = "https://gitee.com/xmn56/gta-unlocking/raw/master/version.json"

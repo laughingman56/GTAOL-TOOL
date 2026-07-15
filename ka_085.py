@@ -143,7 +143,7 @@ def show_settings_ui(parent_window):
     ctk.CTkLabel(frame,
                  text="  ● 断网：\n"
                       "  - 按一下是断网，再按一下是恢复\n"
-                      "  - 卡085，使用断开服务器链接或断开云存档和交易链接\n"
+                      "  - 卡085，建议使用断开服务器链接\n"
                       "  - 卡085，恢复联网会杀启动器，回到菜单，无需退出\n"
                       "  - 卡085，快到结算位置了再按\n"
                       "  - 卡085，也可用于赌场转盘，转之前断网，转到就恢复\n"
@@ -282,11 +282,13 @@ def run_natdown():
             print(f"正在执行: 断开服务器链接")
 
             #保险命令，进程模式断开服务器链接
-            subprocess.Popen(command, shell=True)
+            #subprocess.Popen(command, shell=True)
 
             #主要命令
-            subprocess.Popen(f'"{exe_path}" -c -p "{gta_path}"  -rp 80', shell=True)
-            subprocess.Popen(f'"{exe_path}" -c -p "{gta_path}"  -rp 443', shell=True)
+            subprocess.Popen(f'"{exe_path}" -c -p "{gta_path}" -proto tcp', shell=True)
+
+            #subprocess.Popen(f'"{exe_path}" -c -p "{gta_path}"  -rp 80', shell=True)
+            #subprocess.Popen(f'"{exe_path}" -c -p "{gta_path}"  -rp 443', shell=True)
 
 
         elif data.get("nat_down", {}).get("rule", 0) == 1:

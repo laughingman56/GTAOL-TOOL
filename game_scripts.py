@@ -28,7 +28,7 @@ import num_match
 import all_cayo
 import other_unlock
 import all_casino
-
+import kortz
 
 from concurrent.futures import ThreadPoolExecutor
 
@@ -182,6 +182,11 @@ class ScriptExecutor:
             elif func_id == "assassin_6":
                 print(">>> 执行末日2卡暗杀6...")
                 other_unlock.assassin_6_main()
+
+            elif func_id == "kortz":
+                print(">>> 执行科兹中心圆点破解...")
+                kortz.security()
+
 
             elif func_id == "photo":
                 print(">>> 执行拍照攀爬动作...")

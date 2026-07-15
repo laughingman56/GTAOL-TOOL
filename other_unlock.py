@@ -36,7 +36,7 @@ def show_settings_ui(parent_window):
         lbl.grid(row=0, column=col, padx=15, pady=(15, 10), sticky="w")
 
     # 三个联系人配置
-    contact_ids = ["assassin_6"]
+    contact_ids = ["assassin_6","kortz"]
     #"call_mk2","send_mk2","call_mk2_truck","call_sparrow","call_whale","send_sparrow","call_car","open_door"
     #"m_menu", "weapon_menu", "no_weapon", "shotgun_weapon", "rpg_weapon", "c4_weapon", "pistol_weapon", "sniper_weapon"
 

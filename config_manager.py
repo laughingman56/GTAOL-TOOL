@@ -104,7 +104,8 @@ class ConfigManager:
             "cayo_find_num": {"name": "佩岛前置武器库找数字", "key": "","father": "all_cayo",   "enabled": False},
 
             "other_unlock": {"name": "其他开锁", "key": "NONE", "enabled": True},
-            "assassin_6": {"name": "末日2卡暗杀6", "key": "]", "enabled": False},
+            "assassin_6": {"name": "末日2卡暗杀6", "key": "", "enabled": False},
+            "kortz": {"name": "科兹中心破解", "key": "", "enabled": False},
 
 
 
