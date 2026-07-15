@@ -141,6 +141,38 @@ def show_settings_ui(parent_window):
     ctk.CTkLabel(timer_frame, text="秒",
                  font=("Microsoft YaHei", 18, "bold")).pack(side="left")
 
+    btn_delete_pc = ctk.CTkButton(
+        timer_frame,
+        text="删除pc_settings.bin",
+        font=("Microsoft YaHei", 12, "bold"),
+        width=80,
+        height=30,
+        fg_color="transparent",
+        text_color="#FF474C",
+        hover_color="#FFE0E0",
+        border_width=2,
+        border_color="#FF474C",
+        corner_radius=6,
+        command=delete_pc_settings_bin
+    )
+    btn_delete_pc.pack(side="right", padx=(10, 2))
+
+    btn_backup_pc = ctk.CTkButton(
+        timer_frame,
+        text="备份pc_settings.bin",
+        font=("Microsoft YaHei", 12, "bold"),
+        width=80,
+        height=30,
+        fg_color="transparent",
+        text_color="#4CC768",
+        hover_color="#E0FFE0",
+        border_width=2,
+        border_color="#4CC768",
+        corner_radius=6,
+        command=backup_pc_settings_bin
+    )
+    btn_backup_pc.pack(side="right", padx=(2, 0))
+
     # --- 说明文字 ---
     ctk.CTkLabel(frame,
                  text="  ● 断网：\n"
