@@ -478,7 +478,7 @@ def run(sct=None):
                     print("超过时间，跳出循环")
                     break
                 auto_key_on_black_screen(sct)
-                time.sleep(0.1)
+                time.sleep(0.5)
 
 
     elif get_style1() == 0:

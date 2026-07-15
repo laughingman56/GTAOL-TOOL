@@ -1,18 +1,28 @@
 import math
 import json
 import os
+import sys
 from mss_dpi import ResolutionAdapter
 
 
+def _get_resource_path(relative_path):
+    if getattr(sys, 'frozen', False):
+        base = sys._MEIPASS
+    else:
+        base = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base, relative_path)
+
+
 def load_config(path="num_config.json"):
-    if not os.path.exists(path):
-        print(f"[find_num] config not found: {path}")
+    resolved = _get_resource_path(path)
+    if not os.path.exists(resolved):
+        print(f"[find_num] config not found: {resolved}")
         return {}
-    with open(path, "r", encoding="utf-8") as f:
+    with open(resolved, "r", encoding="utf-8") as f:
         try:
             return json.load(f)
         except json.JSONDecodeError:
-            print(f"[find_num] invalid JSON in config: {path}")
+            print(f"[find_num] invalid JSON in config: {resolved}")
             return {}
 
 
@@ -40,16 +50,17 @@ def select_preset(config, target_w=None, target_h=None):
 
 
 def load_weights(path="num_weights.json"):
-    if not os.path.exists(path):
+    resolved = _get_resource_path(path)
+    if not os.path.exists(resolved):
         raise RuntimeError(
-            f"Weights file not found: {path}. Run train_num.py first."
+            f"Weights file not found: {resolved}. Run train_num.py first."
         )
-    with open(path, "r", encoding="utf-8") as f:
+    with open(resolved, "r", encoding="utf-8") as f:
         try:
             return json.load(f)
         except json.JSONDecodeError as e:
             raise RuntimeError(
-                f"Weights file is invalid JSON: {path}"
+                f"Weights file is invalid JSON: {resolved}"
             ) from e
 
 

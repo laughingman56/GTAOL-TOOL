@@ -31,7 +31,13 @@ def mover_cursor(dr, dc):
 
 
 def _adapt_config(config):
+    if not config:
+        raise RuntimeError("[num_match] num_config.json is empty or not found")
     targets_cfg, grid_cfg, base_w, base_h = select_preset(config)
+    if not targets_cfg:
+        raise RuntimeError("[num_match] targets config is empty in num_config.json")
+    if not grid_cfg or "cols" not in grid_cfg:
+        raise RuntimeError("[num_match] grid config is empty or missing 'cols' in num_config.json")
 
     adapted_targets = {}
     for name, region in targets_cfg.items():
