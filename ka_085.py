@@ -30,7 +30,7 @@ def show_settings_ui(parent_window):
     # 1. 创建顶级弹窗
     settings_win = ctk.CTkToplevel(parent_window)
     settings_win.title("断网设置")
-    settings_win.geometry("800x500")
+    settings_win.geometry("800x600")
     settings_win.resizable(False, False)
 
     # 窗口置顶与模态
@@ -179,8 +179,8 @@ def show_settings_ui(parent_window):
                       "  - 按一下是断网，再按一下是恢复\n"
                       "\n"
                       "  - 卡085，建议使用断开服务器链接\n"
-                      "  - 第一次使用请先点击删除pc_settings.bin，程序会删除原来的\n"
-                      "  - 5分钟之后点击备份pc_settings.bin，程序会复制新的到桌面\n"
+                      "  - 为了避免掉分红，第一次使用请先点击删除pc_settings.bin，程序会删除原来的\n"
+                      "  - 5分钟之后点击备份pc_settings.bin，程序会在同目录下生成.bak备份\n"
                       "  - 之后每次断网都会使用这个备份替换pc_settings.bin\n"
                       "  - 恢复联网会杀启动器，回到菜单，无需退出\n"                      
                       "  - 快到结算位置了再按\n"
@@ -556,11 +556,11 @@ def backup_pc_settings_bin():
     if not path:
         messagebox.showwarning("提示", "未找到 pc_settings.bin")
         return
-    desktop = os.path.join(os.path.expanduser("~"), "Desktop", "pc_settings.bin")
+    backup_path = path + ".bak"
     try:
-        shutil.copy2(path, desktop)
-        print(f"[pc_settings] 已备份到: {desktop}")
-        messagebox.showinfo("提示", "已备份到桌面")
+        shutil.copy2(path, backup_path)
+        print(f"[pc_settings] 已备份: {backup_path}")
+        messagebox.showinfo("提示", "已备份")
     except Exception as e:
         messagebox.showerror("错误", f"备份失败: {e}")
 
@@ -568,12 +568,12 @@ def restore_pc_settings_bin():
     path = find_pc_settings_bin()
     if not path:
         return
-    desktop = os.path.join(os.path.expanduser("~"), "Desktop", "pc_settings.bin")
-    if not os.path.exists(desktop):
+    backup_path = path + ".bak"
+    if not os.path.exists(backup_path):
         return
     try:
-        shutil.copy2(desktop, path)
-        print(f"[pc_settings] 已从桌面恢复: {desktop} -> {path}")
+        shutil.copy2(backup_path, path)
+        print(f"[pc_settings] 已恢复: {backup_path} -> {path}")
     except Exception as e:
         print(f"[pc_settings] 恢复失败: {e}")
 
