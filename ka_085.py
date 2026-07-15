@@ -28,7 +28,7 @@ def show_settings_ui(parent_window):
     # 1. 创建顶级弹窗
     settings_win = ctk.CTkToplevel(parent_window)
     settings_win.title("断网设置")
-    settings_win.geometry("500x500")
+    settings_win.geometry("800x500")
     settings_win.resizable(False, False)
 
     # 窗口置顶与模态
@@ -143,10 +143,14 @@ def show_settings_ui(parent_window):
     ctk.CTkLabel(frame,
                  text="  ● 断网：\n"
                       "  - 按一下是断网，再按一下是恢复\n"
+                      "\n"
                       "  - 卡085，建议使用断开服务器链接\n"
-                      "  - 卡085，恢复联网会杀启动器，回到菜单，无需退出\n"
-                      "  - 卡085，快到结算位置了再按\n"
-                      "  - 卡085，也可用于赌场转盘，转之前断网，转到就恢复\n"
+                      "  - 第一次使用请先点击删除pc_settings.bin，程序会删除原来的\n"
+                      "  - 5分钟之后点击备份pc_settings.bin，程序会复制新的到桌面\n"
+                      "  - 之后每次断网都会使用这个备份替换pc_settings.bin\n"
+                      "  - 恢复联网会杀启动器，回到菜单，无需退出\n"                      
+                      "  - 快到结算位置了再按\n"
+                      "  - 也可用于赌场转盘，转之前断网，转到就恢复\n"
                       "\n"
                       "  - 卡185，必须使用窗口模式\n"
                       "  - 断网功能使用quellgta的wfpcon断网\n"
