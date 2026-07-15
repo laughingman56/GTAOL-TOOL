@@ -2,6 +2,8 @@ import subprocess
 import ctypes
 import sys
 import os
+import shutil
+from tkinter import messagebox
 import psutil
 
 import socket
@@ -474,6 +476,54 @@ class FloatingText:
     def _on_close(self):
         """方案A：只隐藏浮窗，不管断网状态"""
         self.hide()
+
+
+def find_pc_settings_bin():
+    docs = os.path.join(os.path.expanduser("~"), "Documents", "Rockstar Games")
+    if not os.path.exists(docs):
+        return None
+    for root, dirs, files in os.walk(docs):
+        for f in files:
+            if f.lower() == "pc_settings.bin":
+                return os.path.join(root, f)
+    return None
+
+def delete_pc_settings_bin():
+    path = find_pc_settings_bin()
+    if not path:
+        messagebox.showwarning("提示", "未找到 pc_settings.bin")
+        return
+    try:
+        os.remove(path)
+        print(f"[pc_settings] 已删除: {path}")
+    except Exception as e:
+        messagebox.showerror("错误", f"删除失败: {e}")
+
+def backup_pc_settings_bin():
+    path = find_pc_settings_bin()
+    if not path:
+        messagebox.showwarning("提示", "未找到 pc_settings.bin")
+        return
+    desktop = os.path.join(os.path.expanduser("~"), "Desktop", "pc_settings.bin")
+    try:
+        shutil.copy2(path, desktop)
+        print(f"[pc_settings] 已备份到: {desktop}")
+        messagebox.showinfo("提示", "已备份到桌面")
+    except Exception as e:
+        messagebox.showerror("错误", f"备份失败: {e}")
+
+def restore_pc_settings_bin():
+    path = find_pc_settings_bin()
+    if not path:
+        return
+    desktop = os.path.join(os.path.expanduser("~"), "Desktop", "pc_settings.bin")
+    if not os.path.exists(desktop):
+        return
+    try:
+        shutil.copy2(desktop, path)
+        print(f"[pc_settings] 已从桌面恢复: {desktop} -> {path}")
+    except Exception as e:
+        print(f"[pc_settings] 恢复失败: {e}")
 
 
 def main():
