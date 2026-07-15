@@ -180,7 +180,7 @@ def show_settings_ui(parent_window):
                       "\n"
                       "  - 卡085，建议使用断开服务器链接\n"
                       "  - 为了避免掉分红，第一次使用请先点击删除pc_settings.bin，程序会删除原来的\n"
-                      "  - 5分钟之后点击备份pc_settings.bin，程序会在同目录下生成.bak备份\n"
+                      "  - 5分钟之后点击备份pc_settings.bin，程序会复制到程序目录\n"
                       "  - 之后每次断网都会使用这个备份替换pc_settings.bin\n"
                       "  - 恢复联网会杀启动器，回到菜单，无需退出\n"                      
                       "  - 快到结算位置了再按\n"
@@ -551,16 +551,23 @@ def delete_pc_settings_bin():
     if not deleted:
         messagebox.showwarning("提示", "未找到 pc_settings.bin")
 
+def get_backup_path():
+    if getattr(sys, 'frozen', False):
+        exe_dir = os.path.dirname(sys.executable)
+    else:
+        exe_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(exe_dir, "pc_settings.bin")
+
 def backup_pc_settings_bin():
     path = find_pc_settings_bin()
     if not path:
         messagebox.showwarning("提示", "未找到 pc_settings.bin")
         return
-    backup_path = path + ".bak"
+    backup_path = get_backup_path()
     try:
         shutil.copy2(path, backup_path)
-        print(f"[pc_settings] 已备份: {backup_path}")
-        messagebox.showinfo("提示", "已备份")
+        print(f"[pc_settings] 已备份到: {backup_path}")
+        messagebox.showinfo("提示", "已备份到程序目录")
     except Exception as e:
         messagebox.showerror("错误", f"备份失败: {e}")
 
@@ -568,7 +575,7 @@ def restore_pc_settings_bin():
     path = find_pc_settings_bin()
     if not path:
         return
-    backup_path = path + ".bak"
+    backup_path = get_backup_path()
     if not os.path.exists(backup_path):
         return
     try:
