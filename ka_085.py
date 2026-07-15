@@ -144,7 +144,7 @@ def show_settings_ui(parent_window):
     btn_delete_pc = ctk.CTkButton(
         timer_frame,
         text="删除pc_settings.bin",
-        font=("Microsoft YaHei", 12, "bold"),
+        font=("Microsoft YaHei", 18, "bold"),
         width=160,
         height=30,
         fg_color="transparent",
@@ -160,7 +160,7 @@ def show_settings_ui(parent_window):
     btn_backup_pc = ctk.CTkButton(
         timer_frame,
         text="备份pc_settings.bin",
-        font=("Microsoft YaHei", 12, "bold"),
+        font=("Microsoft YaHei", 18, "bold"),
         width=160,
         height=30,
         fg_color="transparent",
@@ -514,22 +514,42 @@ def find_pc_settings_bin():
     docs = os.path.join(os.path.expanduser("~"), "Documents", "Rockstar Games")
     if not os.path.exists(docs):
         return None
-    for root, dirs, files in os.walk(docs):
-        for f in files:
-            if f.lower() == "pc_settings.bin":
-                return os.path.join(root, f)
+    for entry in os.listdir(docs):
+        if "gta" not in entry.lower():
+            continue
+        dir_path = os.path.join(docs, entry)
+        if not os.path.isdir(dir_path):
+            continue
+        for root, dirs, files in os.walk(dir_path):
+            for f in files:
+                if f.lower() == "pc_settings.bin":
+                    return os.path.join(root, f)
     return None
 
 def delete_pc_settings_bin():
-    path = find_pc_settings_bin()
-    if not path:
-        messagebox.showwarning("提示", "未找到 pc_settings.bin")
+    docs = os.path.join(os.path.expanduser("~"), "Documents", "Rockstar Games")
+    if not os.path.exists(docs):
+        messagebox.showwarning("提示", "未找到 Rockstar Games 目录")
         return
-    try:
-        os.remove(path)
-        print(f"[pc_settings] 已删除: {path}")
-    except Exception as e:
-        messagebox.showerror("错误", f"删除失败: {e}")
+    deleted = []
+    for entry in os.listdir(docs):
+        if "gta" not in entry.lower():
+            continue
+        dir_path = os.path.join(docs, entry)
+        if not os.path.isdir(dir_path):
+            continue
+        for root, dirs, files in os.walk(dir_path):
+            for f in files:
+                if f.lower() == "pc_settings.bin":
+                    file_path = os.path.join(root, f)
+                    try:
+                        os.remove(file_path)
+                        deleted.append(file_path)
+                        print(f"[pc_settings] 已删除: {file_path}")
+                    except Exception as e:
+                        messagebox.showerror("错误", f"删除失败: {file_path}\n{e}")
+    if not deleted:
+        messagebox.showwarning("提示", "未找到 pc_settings.bin")
 
 def backup_pc_settings_bin():
     path = find_pc_settings_bin()
