@@ -589,6 +589,7 @@ def main():
                 if time.time() - start_time > times:
                     print("超过时间，跳出循环")
                     recover_natdown()
+                    restore_pc_settings_bin()
 
                     if _overlay:
                         _overlay.destroy()
@@ -610,6 +611,7 @@ def main():
 
     else:
         recover_natdown()
+        restore_pc_settings_bin()
 
         if _overlay:
             _overlay.destroy()
