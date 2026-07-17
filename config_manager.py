@@ -105,7 +105,8 @@ class ConfigManager:
 
             "other_unlock": {"name": "其他开锁", "key": "NONE", "enabled": True},
             "assassin_6": {"name": "末日2卡暗杀6", "key": "", "enabled": False},
-            "kortz": {"name": "科兹中心破解", "key": "", "enabled": False},
+            "kortz": {"name": "科兹中心圆点破解", "key": "", "enabled": False},
+            "kortz_hard": {"name": "科兹中心圆点破解（困难）", "key": "", "enabled": False},
 
 
 

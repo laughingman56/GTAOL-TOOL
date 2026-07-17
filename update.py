@@ -11,7 +11,7 @@ from config_manager import ConfigManager
 
 # ================= 配置区域 =================
 # 当前脚本的版本号（每次发布新版时修改这里）
-CURRENT_VERSION = "1.1.8"
+CURRENT_VERSION = "1.2.0"
 
 # Gitee 原始文件直链
 VERSION_URL = "https://gitee.com/xmn56/gta-unlocking/raw/master/version.json"
@@ -224,9 +224,14 @@ def show_settings_ui(parent_window, remote_data=None):
             download_btn.pack(pady=10, padx=20, fill="x")
 
         else:
-            status_label.configure(text="当前已是最新版本", text_color="gray")
-            update_log_text("暂无更新。")
-            download_btn.pack_forget()
+            status_label.configure(text=f"当前已是最新版本 ({CURRENT_VERSION})", text_color="gray")
+            update_log_text(f"当前已是最新版本。\n{remote_log}")
+            download_btn.configure(
+                state="normal",
+                text="重新下载安装",
+                command=lambda: start_download(download_url)
+            )
+            download_btn.pack(pady=10, padx=20, fill="x")
 
     def start_check():
         check_btn.configure(state="disabled", text="正在检查...")

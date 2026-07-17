@@ -140,7 +140,7 @@ def run_task():
     # 按键不需要 mss，放在 with 块外面也可以，或者里面也行
 
     # 设置输入库的防卡死和延迟
-    pydirectinput.PAUSE = 0.02
+    pydirectinput.PAUSE = 0.05
     pydirectinput.FAILSAFE = False
 
 

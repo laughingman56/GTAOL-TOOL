@@ -19,7 +19,7 @@ class CayoLogic:
     def cayo_finger_run():
 
         # 设置输入库的防卡死和延迟
-        pydirectinput.PAUSE = 0.02
+        pydirectinput.PAUSE = 0.05
         pydirectinput.FAILSAFE = False
 
         # 低帧率模式

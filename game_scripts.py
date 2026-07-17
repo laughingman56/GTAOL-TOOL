@@ -29,6 +29,7 @@ import all_cayo
 import other_unlock
 import all_casino
 import kortz
+import kortz_hard
 
 from concurrent.futures import ThreadPoolExecutor
 
@@ -187,6 +188,9 @@ class ScriptExecutor:
                 print(">>> 执行科兹中心圆点破解...")
                 kortz.security()
 
+            elif func_id == "kortz_hard":
+                print(">>> 执行科兹中心圆点破解(困难)...")
+                kortz_hard.security()
 
             elif func_id == "photo":
                 print(">>> 执行拍照攀爬动作...")

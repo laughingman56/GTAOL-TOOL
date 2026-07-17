@@ -88,8 +88,8 @@ def scan_grid_accumulator():
 
     with mss.mss() as sct:
         st = time.time()
-        # 截图持续 3 秒
-        while time.time() - st < 4:
+        # 截图持续 4 秒
+        while time.time() - st < 5:
             # 1. 获取截图并转换为 PIL Image (HSV模式)
             sct_img = sct.grab(cfg)
             img = Image.frombytes("RGB", sct_img.size, sct_img.bgra, "raw", "BGRX")
@@ -108,9 +108,8 @@ def scan_grid_accumulator():
 
 
     # 3. 计算结果 (替代 numpy.argmax)
-    # Kortz: 只用前5列
     result = []
-    for col in range(5):
+    for col in range(6):
         # 找到每一列中分数最高的行的索引
         # col_scores 是一个包含5个数字的列表
         col_scores = score_board[col]
@@ -127,7 +126,7 @@ def scan_grid_accumulator():
 
 
 def get_start_cursor_row():
-    """定位层 (Pillow版) - Kortz: 只用前4行"""
+    """定位层 (Pillow版)"""
     print("[2/3] 定位光标...")
     #time.sleep(0.5)
     cfg = mss_dpi.ResolutionAdapter.get_mss_config(BASE_ROI_TUPLE)
@@ -144,8 +143,8 @@ def get_start_cursor_row():
         img = Image.frombytes("RGB", sct_img.size, sct_img.bgra, "raw", "BGRX")
         img_hsv = img.convert("HSV")
 
-        # Kortz: 只扫描前4行 (跳过第5行)
-        for r in range(4):
+        # 只扫描第一列 (col=0)
+        for r in range(5):
             box = (0, r * row_h, col_w, (r + 1) * row_h)
             cell_img = img_hsv.crop(box)
             scores[r] = count_pixels_in_image(cell_img, mode='white')
@@ -164,7 +163,7 @@ def get_start_cursor_row():
     return int(best_row_index + 1)
 
 
-# ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 执行层 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+# ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 执行层 (保持不变) ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
 def execute_hack(target_rows, start_row):
     print("[3/3] 开始硬核输入 (DirectInput)...")
 
@@ -173,12 +172,12 @@ def execute_hack(target_rows, start_row):
 
     curr = start_row
     for target in target_rows:
-        diff = (target - curr) % 4
+        diff = (target - curr) % 5
         if diff != 0:
             if diff <= 2:
                 pydirectinput.press('s', presses=diff, interval=0.1)
             else:
-                pydirectinput.press('w', presses=(4 - diff), interval=0.1)
+                pydirectinput.press('w', presses=(5 - diff), interval=0.1)
         #time.sleep(0.1)
         pydirectinput.press('enter')
         curr = target
@@ -193,6 +192,6 @@ def security():
     pydirectinput.PAUSE = 0.05
     codes = scan_grid_accumulator()
     print(f"结果: {codes}")
-    #start_cursor = get_start_cursor_row()
-    start_cursor = 1
+    start_cursor = get_start_cursor_row()
+    #start_cursor = 1
     execute_hack(codes, start_cursor)

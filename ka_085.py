@@ -180,7 +180,7 @@ def show_settings_ui(parent_window):
                       "\n"
                       "  - 卡085，建议使用断开服务器链接\n"
                       "  - 为了避免掉分红，第一次使用请先点击删除pc_settings.bin，程序会删除原来的\n"
-                      "  - 5分钟之后点击备份pc_settings.bin，程序会复制到程序目录\n"
+                      "  - 5分钟之后点击备份pc_settings.bin，程序会复制到exe目录下\n"
                       "  - 之后每次断网都会使用这个备份替换pc_settings.bin\n"
                       "  - 恢复联网会杀启动器，回到菜单，无需退出\n"                      
                       "  - 快到结算位置了再按\n"

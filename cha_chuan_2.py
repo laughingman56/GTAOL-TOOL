@@ -440,8 +440,10 @@ def auto_key_on_black_screen(sct=None):
             print(f"白色像素占比{dist}")
 
             if dist > 12.5:
-                pydirectinput.press("esc")
+                #time.sleep(0.5)
+                pydirectinput.press("enter")
             else:
+                #time.sleep(0.5)
                 pydirectinput.press("enter")
 
             # 按完后等待几秒，防止在一个黑屏里疯狂连按
@@ -469,7 +471,7 @@ def run(sct=None):
             time.sleep(0.1)
             pydirectinput.press("enter")
 
-
+        time.sleep(1)
         run_steam_jvp(get_cmd2())
         time.sleep(1)
 
