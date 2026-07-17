@@ -180,7 +180,7 @@ def natdown_stop():
 
 
 
-        pydirectinput.PAUSE = 0.02
+        pydirectinput.PAUSE = 0.05
 
         pydirectinput.keyDown("alt")
         time.sleep(0.02)
@@ -209,7 +209,7 @@ def natdown_stop():
 
 def chara_stop():
     print("切换角色悬停")
-    pydirectinput.PAUSE = 0.02
+    pydirectinput.PAUSE = 0.05
 
     pydirectinput.keyDown("alt")
     time.sleep(0.5)

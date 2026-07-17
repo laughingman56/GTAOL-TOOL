@@ -220,7 +220,7 @@ def _run(key):
     extra_delay = delay()
     #print(extra_delay)
 
-    pydirectinput.PAUSE = 0.02
+    pydirectinput.PAUSE = 0.05
     quick_press("up")
     time.sleep(0.5 + extra_delay)
     force_scroll(1)

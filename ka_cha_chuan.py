@@ -285,7 +285,7 @@ def quick_press(button):
 def run_phone():
 
     # 设置输入库的防卡死和延迟
-    pydirectinput.PAUSE = 0.02
+    pydirectinput.PAUSE = 0.05
     pydirectinput.FAILSAFE = False
 
     # 低帧率模式
@@ -333,7 +333,7 @@ def force_scroll(n=1):
 def run_m(sct=None):
 
     # 设置输入库的防卡死和延迟
-    pydirectinput.PAUSE = 0.02
+    pydirectinput.PAUSE = 0.05
     pydirectinput.FAILSAFE = False
 
     # 低帧率模式
@@ -378,7 +378,7 @@ def run_m(sct=None):
 
 def run_ka_cha_chuan():
     # 设置输入库的防卡死和延迟
-    pydirectinput.PAUSE = 0.02
+    pydirectinput.PAUSE = 0.05
     pydirectinput.FAILSAFE = False
 
     run_phone()

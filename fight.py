@@ -218,7 +218,7 @@ def _get_times(key):
 def eat_pill(sct=None):
 
     # 设置输入库的防卡死和延迟
-    pydirectinput.PAUSE = 0.02
+    pydirectinput.PAUSE = 0.05
     pydirectinput.FAILSAFE = False
 
     extra_delay = delay()
@@ -277,7 +277,7 @@ def eat_pill(sct=None):
 
 def buy_bullet(sct=None):
     # 设置输入库的防卡死和延迟
-    pydirectinput.PAUSE = 0.02
+    pydirectinput.PAUSE = 0.05
     pydirectinput.FAILSAFE = False
 
     extra_delay = delay()
@@ -320,7 +320,7 @@ def buy_bullet(sct=None):
 def revolver():
 
     # 设置输入库的防卡死和延迟
-    pydirectinput.PAUSE = 0.02
+    pydirectinput.PAUSE = 0.05
     pydirectinput.FAILSAFE = False
 
     m_menu = get_key("m_menu")
@@ -371,7 +371,7 @@ def revolver():
 #连发rpg
 def rpg():
     # 设置输入库的防卡死和延迟
-    pydirectinput.PAUSE = 0.02
+    pydirectinput.PAUSE = 0.05
     pydirectinput.FAILSAFE = False
 
     m_menu = get_key("m_menu")
@@ -403,7 +403,7 @@ def rpg():
 #连发狙
 def sniper():
     # 设置输入库的防卡死和延迟
-    pydirectinput.PAUSE = 0.02
+    pydirectinput.PAUSE = 0.05
     pydirectinput.FAILSAFE = False
 
     m_menu = get_key("m_menu")
@@ -447,7 +447,7 @@ def thermal():
     extra_delay = delay()
     #print(extra_delay)
 
-    pydirectinput.PAUSE = 0.02
+    pydirectinput.PAUSE = 0.05
     quick_press(m_menu)
     time.sleep(0.5 + extra_delay)
     for _ in range(6):
@@ -479,7 +479,7 @@ def cloth():
     extra_delay = delay()
     #print(extra_delay)
 
-    pydirectinput.PAUSE = 0.02
+    pydirectinput.PAUSE = 0.05
     quick_press(m_menu)
     time.sleep(0.5 + extra_delay)
     for _ in range(6):
@@ -520,7 +520,7 @@ def flight_thermal(sct=None):
     #print(extra_delay)
 
     # 设置输入库的防卡死和延迟
-    pydirectinput.PAUSE = 0.02
+    pydirectinput.PAUSE = 0.05
     pydirectinput.FAILSAFE = False
 
     """主运行函数，支持复用 mss 实例"""
@@ -581,7 +581,7 @@ def ghost(sct=None):
     sniper_weapon = get_key("sniper_weapon")
 
     # 设置输入库的防卡死和延迟
-    pydirectinput.PAUSE = 0.02
+    pydirectinput.PAUSE = 0.05
     pydirectinput.FAILSAFE = False
 
     extra_delay = delay()
@@ -643,7 +643,7 @@ def _run(key):
     extra_delay = delay()
     #print(extra_delay)
 
-    pydirectinput.PAUSE = 0.02
+    pydirectinput.PAUSE = 0.05
     quick_press(m_menu)
     time.sleep(0.5 + extra_delay)
     for _ in range(7):
