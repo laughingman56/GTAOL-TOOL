@@ -39,7 +39,7 @@ def _run(key):
     extra_delay = delay()
     #print(extra_delay)
 
-    pydirectinput.PAUSE = 0.05
+    pydirectinput.PAUSE = 0.02
     quick_press("m")
     time.sleep(0.5 + extra_delay)
     for _ in range(7):

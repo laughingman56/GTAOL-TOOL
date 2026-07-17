@@ -246,7 +246,7 @@ def show_macro_editor_window(parent_window, script_id, config):
         textbox.focus_set()
 
     templates = [
-        ("按键间隔", "pydirectinput.PAUSE = 0.05"),
+        ("按键间隔", "pydirectinput.PAUSE = 0.02"),
 
         ("按键按下", "pydirectinput.keyDown('')"),
         ("按键抬起", "pydirectinput.keyUp('')"),

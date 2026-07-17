@@ -184,7 +184,7 @@ def call_mk2__run():
 
     m_menu = get_key("m_menu")
 
-    pydirectinput.PAUSE = 0.05
+    pydirectinput.PAUSE = 0.02
     quick_press(m_menu)
     time.sleep(0.5 + extra_delay)
     for _ in range(8):
@@ -211,7 +211,7 @@ def call_mk2_truck__run():
 
     m_menu = get_key("m_menu")
 
-    pydirectinput.PAUSE = 0.05
+    pydirectinput.PAUSE = 0.02
     quick_press(m_menu)
     time.sleep(0.5 + extra_delay)
     for _ in range(8):
@@ -236,7 +236,7 @@ def send_mk2__run():
 
     m_menu = get_key("m_menu")
 
-    pydirectinput.PAUSE = 0.05
+    pydirectinput.PAUSE = 0.02
     quick_press(m_menu)
     time.sleep(0.5 + extra_delay)
     for _ in range(9):
@@ -260,7 +260,7 @@ def call_car__run():
 
     m_menu = get_key("m_menu")
 
-    pydirectinput.PAUSE = 0.05
+    pydirectinput.PAUSE = 0.02
     quick_press(m_menu)
     time.sleep(0.5 + extra_delay)
     for _ in range(9):
@@ -282,7 +282,7 @@ def open_door__run():
 
     m_menu = get_key("m_menu")
 
-    pydirectinput.PAUSE = 0.05
+    pydirectinput.PAUSE = 0.02
     quick_press(m_menu)
     time.sleep(0.5 + extra_delay)
     for _ in range(9):
@@ -316,7 +316,7 @@ def call_sparrow__run():
 
     m_menu = get_key("m_menu")
 
-    pydirectinput.PAUSE = 0.05
+    pydirectinput.PAUSE = 0.02
     quick_press(m_menu)
     time.sleep(0.5 + extra_delay)
     for _ in range(8):
@@ -343,7 +343,7 @@ def call_whale__run():
 
     m_menu = get_key("m_menu")
 
-    pydirectinput.PAUSE = 0.05
+    pydirectinput.PAUSE = 0.02
     quick_press(m_menu)
     time.sleep(0.5 + extra_delay)
     for _ in range(8):
@@ -370,7 +370,7 @@ def send_sparrow__run():
 
     m_menu = get_key("m_menu")
 
-    pydirectinput.PAUSE = 0.05
+    pydirectinput.PAUSE = 0.02
     quick_press(m_menu)
     time.sleep(0.5 + extra_delay)
     for _ in range(8):

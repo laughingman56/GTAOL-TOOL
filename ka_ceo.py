@@ -298,7 +298,7 @@ def quick_press(button):
 def run_phone():
 
     # 设置输入库的防卡死和延迟
-    pydirectinput.PAUSE = 0.05
+    pydirectinput.PAUSE = 0.02
     pydirectinput.FAILSAFE = False
 
     # 低帧率模式
@@ -343,7 +343,7 @@ def run_phone():
 def cancel_phone():
 
     # 设置输入库的防卡死和延迟
-    pydirectinput.PAUSE = 0.05
+    pydirectinput.PAUSE = 0.02
     pydirectinput.FAILSAFE = False
 
     # 低帧率模式
@@ -482,7 +482,7 @@ def auto_key_on_black_screen(sct=None):
 
 def run_ka_ceo(sct=None):
     # 设置输入库的防卡死和延迟
-    pydirectinput.PAUSE = 0.05
+    pydirectinput.PAUSE = 0.02
     pydirectinput.FAILSAFE = False
 
     run_phone()
