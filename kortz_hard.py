@@ -167,6 +167,9 @@ def get_start_cursor_row():
 def execute_hack(target_rows, start_row):
     print("[3/3] 开始硬核输入 (DirectInput)...")
 
+    # 设置输入库的防卡死和延迟
+    pydirectinput.PAUSE = 0.05
+    pydirectinput.FAILSAFE = False
 
 
 
@@ -175,11 +178,18 @@ def execute_hack(target_rows, start_row):
         diff = (target - curr) % 5
         if diff != 0:
             if diff <= 2:
-                pydirectinput.press('s', presses=diff, interval=0.1)
+                for _ in range(diff):
+                    pydirectinput.keyDown('s')
+                    pydirectinput.keyUp('s')
+                    time.sleep(0.05)
             else:
-                pydirectinput.press('w', presses=(5 - diff), interval=0.1)
+                for _ in range(5 - diff):
+                    pydirectinput.keyDown('w')
+                    pydirectinput.keyUp('w')
+                    time.sleep(0.05)
         #time.sleep(0.1)
-        pydirectinput.press('enter')
+        pydirectinput.keyDown('enter')
+        pydirectinput.keyUp('enter')
         curr = target
         time.sleep(0.2)
 
@@ -189,9 +199,9 @@ def execute_hack(target_rows, start_row):
 # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
 def security():
-    pydirectinput.PAUSE = 0.05
+
     codes = scan_grid_accumulator()
     print(f"结果: {codes}")
-    start_cursor = get_start_cursor_row()
-    #start_cursor = 1
+    #start_cursor = get_start_cursor_row()
+    start_cursor = 1
     execute_hack(codes, start_cursor)

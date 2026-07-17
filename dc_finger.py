@@ -78,7 +78,7 @@ def run_task():
 #    if not TEMPLATES_P1 or not TEMPLATES_P2:
 #        print("❌ 错误：未填入哈希数据，请先运行 get_hashes.py 并填充代码！")
 #        return
-
+    '''
     #低帧率模式
     # 获取配置管理器实例（确保你已经导入并正确初始化了 ConfigManager）
     from config_manager import ConfigManager  # 1. 导入 ConfigManager
@@ -92,7 +92,7 @@ def run_task():
     # 根据配置决定 extra_delay
     extra_delay = 0.05 if low_fps_enabled else 0
     #结束
-
+    '''
 
     # ★关键修改：在任务线程内部初始化 mss，避免跨线程报错
     with mss.mss() as sct:
@@ -149,16 +149,22 @@ def run_task():
     last_idx = max(top_4) if top_4 else 0
     for i in range(last_idx + 1):
         if i in top_4:
-            pydirectinput.press('enter')
-            time.sleep(extra_delay)
+            #pydirectinput.press('enter')
+            pydirectinput.keyDown("enter")
+            pydirectinput.keyUp("enter")
+            #time.sleep(extra_delay)
         if i < last_idx:
-            pydirectinput.press('right')
-            time.sleep(extra_delay)
-    time.sleep(extra_delay)
+            #pydirectinput.press('right')
+            pydirectinput.keyDown("right")
+            pydirectinput.keyUp("right")
+            #time.sleep(extra_delay)
+    #time.sleep(extra_delay)
     time.sleep(0.02)
-    pydirectinput.press('tab')
+    #pydirectinput.press('tab')
+    pydirectinput.keyDown('tab')
+    pydirectinput.keyUp('tab')
 
-    pydirectinput.PAUSE = 0.1 #回到默认，防止影响其他函数
+    #pydirectinput.PAUSE = 0.1 #回到默认，防止影响其他函数
 #    print("★ 完成")
 
 
