@@ -510,8 +510,13 @@ class FloatingText:
         self.hide()
 
 
+def get_documents_path():
+    buf = ctypes.create_unicode_buffer(260)
+    ctypes.windll.shell32.SHGetFolderPathW(None, 5, None, 0, buf)
+    return buf.value
+
 def find_pc_settings_bin():
-    docs = os.path.join(os.path.expanduser("~"), "Documents", "Rockstar Games")
+    docs = os.path.join(get_documents_path(), "Rockstar Games")
     if not os.path.exists(docs):
         return None
     for entry in os.listdir(docs):
@@ -527,7 +532,7 @@ def find_pc_settings_bin():
     return None
 
 def delete_pc_settings_bin():
-    docs = os.path.join(os.path.expanduser("~"), "Documents", "Rockstar Games")
+    docs = os.path.join(get_documents_path(), "Rockstar Games")
     if not os.path.exists(docs):
         messagebox.showwarning("提示", "未找到 Rockstar Games 目录")
         return
