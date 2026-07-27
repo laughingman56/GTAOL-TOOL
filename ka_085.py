@@ -577,6 +577,8 @@ def delete_pc_settings_bin():
                             messagebox.showerror("错误", f"删除失败: {file_path}\n{e}")
     if not deleted:
         messagebox.showwarning("提示", "未找到 pc_settings.bin")
+    else:
+        messagebox.showinfo("提示", f"已删除 {len(deleted)} 个 pc_settings.bin")
 
 def get_backup_path():
     if getattr(sys, 'frozen', False):
