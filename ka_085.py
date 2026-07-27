@@ -511,48 +511,70 @@ class FloatingText:
 
 
 def get_documents_path():
-    buf = ctypes.create_unicode_buffer(260)
-    ctypes.windll.shell32.SHGetFolderPathW(None, 5, None, 0, buf)
-    return buf.value
+    try:
+        import ctypes.wintypes
+        buf = ctypes.c_void_p()
+        folder_id = bytes("FDD39AD0-238F-46AF-ADB4-6C85480369C7", "utf-16-le") + b"\x00\x00"
+        hr = ctypes.windll.shell32.SHGetKnownFolderPath(folder_id, 0, None, ctypes.byref(buf))
+        if hr == 0 and buf.value:
+            result = ctypes.cast(buf.value, ctypes.c_wstring).value
+            ctypes.windll.ole32.CoTaskMemFree(buf)
+            if os.path.isdir(result):
+                return result
+    except:
+        pass
+    buf = ctypes.create_unicode_buffer(4096)
+    hr = ctypes.windll.shell32.SHGetFolderPathW(None, 5, None, 0, buf)
+    if hr == 0 and buf.value:
+        return buf.value
+    return os.path.join(os.path.expanduser("~"), "Documents")
+
+def _get_all_rockstar_dirs():
+    dirs = []
+    docs_path = os.path.join(get_documents_path(), "Rockstar Games")
+    if os.path.isdir(docs_path):
+        dirs.append(docs_path)
+    username = os.environ.get("USERNAME", "")
+    for d in "DEFGHIJKLMNOPQRSTUVWXYZ":
+        for p in (f"{d}:\\Users\\{username}\\Documents\\Rockstar Games",
+                  f"{d}:\\Documents\\Rockstar Games"):
+            if os.path.isdir(p) and p not in dirs:
+                dirs.append(p)
+    return dirs
 
 def find_pc_settings_bin():
-    docs = os.path.join(get_documents_path(), "Rockstar Games")
-    if not os.path.exists(docs):
-        return None
-    for entry in os.listdir(docs):
-        if "gta" not in entry.lower():
-            continue
-        dir_path = os.path.join(docs, entry)
-        if not os.path.isdir(dir_path):
-            continue
-        for root, dirs, files in os.walk(dir_path):
-            for f in files:
-                if f.lower() == "pc_settings.bin":
-                    return os.path.join(root, f)
+    for docs in _get_all_rockstar_dirs():
+        for entry in os.listdir(docs):
+            if "gta" not in entry.lower():
+                continue
+            dir_path = os.path.join(docs, entry)
+            if not os.path.isdir(dir_path):
+                continue
+            for root, dirs, files in os.walk(dir_path):
+                for f in files:
+                    if f.lower() == "pc_settings.bin":
+                        return os.path.join(root, f)
     return None
 
 def delete_pc_settings_bin():
-    docs = os.path.join(get_documents_path(), "Rockstar Games")
-    if not os.path.exists(docs):
-        messagebox.showwarning("提示", "未找到 Rockstar Games 目录")
-        return
     deleted = []
-    for entry in os.listdir(docs):
-        if "gta" not in entry.lower():
-            continue
-        dir_path = os.path.join(docs, entry)
-        if not os.path.isdir(dir_path):
-            continue
-        for root, dirs, files in os.walk(dir_path):
-            for f in files:
-                if f.lower() == "pc_settings.bin":
-                    file_path = os.path.join(root, f)
-                    try:
-                        os.remove(file_path)
-                        deleted.append(file_path)
-                        print(f"[pc_settings] 已删除: {file_path}")
-                    except Exception as e:
-                        messagebox.showerror("错误", f"删除失败: {file_path}\n{e}")
+    for docs in _get_all_rockstar_dirs():
+        for entry in os.listdir(docs):
+            if "gta" not in entry.lower():
+                continue
+            dir_path = os.path.join(docs, entry)
+            if not os.path.isdir(dir_path):
+                continue
+            for root, dirs, files in os.walk(dir_path):
+                for f in files:
+                    if f.lower() == "pc_settings.bin":
+                        file_path = os.path.join(root, f)
+                        try:
+                            os.remove(file_path)
+                            deleted.append(file_path)
+                            print(f"[pc_settings] 已删除: {file_path}")
+                        except Exception as e:
+                            messagebox.showerror("错误", f"删除失败: {file_path}\n{e}")
     if not deleted:
         messagebox.showwarning("提示", "未找到 pc_settings.bin")
 
