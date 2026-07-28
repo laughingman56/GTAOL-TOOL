@@ -54,8 +54,16 @@ class GTAUnlockApp(ctk.CTk):
 
         bottom_label = ctk.CTkLabel(
             self,
-            text="第一次使用请先点击，使用说明|音效，按键设置|自动挂机",
+            text=   "0. 使用窗口模式和无边框模式"
+                    "\n1. 点击左侧【按键块】录入快捷键。"
+                    "\n2. 点击中间【功能名称】可打开详细设置。"
+                    "\n3. 点击右侧【开关】启用或禁用功能。"
+                    "\n4. 使用前先阅读使用说明，并进行按键设置"
+
+            ,
             font=("Microsoft YaHei", 20, "bold"),
+            anchor="w",  # 文字靠左
+            justify="left"  # 多行左对齐
 
         )
         # 跨越两列显示，置于底部

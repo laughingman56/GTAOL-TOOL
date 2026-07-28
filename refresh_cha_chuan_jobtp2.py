@@ -27,7 +27,7 @@ def show_settings_ui(parent_window):
     # 2. 准备数据
     cfg = ConfigManager()
     data = cfg.get_all_data()
-    bot_options = ["1号bot--郑州联通", "2号bot--郑州移动", "3号bot--自由瞄准", "4号bot--辅助瞄准"]  # 对应索引 0, 1, 2
+    bot_options = ["1号bot--郑州联通", "2号bot--郑州移动", "3号bot--乔瑟夫乔斯达", "4号bot--辅助瞄准"]  # 对应索引 0, 1, 2
 
     # 新增：计算每个bot的状态（使用文本标记）
     bot_options_with_status = []
@@ -173,7 +173,7 @@ def auto_change_bot():
     cfg = ConfigManager()
     data = cfg.get_all_data()
 
-    bot_names = ["1号bot--郑州联通", "2号bot--郑州移动", "3号bot--自由瞄准", "4号bot--辅助瞄准"]
+    bot_names = ["1号bot--郑州联通", "2号bot--郑州移动", "3号bot--乔瑟夫乔斯达", "4号bot--辅助瞄准"]
 
     # 找出所有坏掉的bot
     bad_bots = []
