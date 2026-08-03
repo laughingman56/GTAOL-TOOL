@@ -173,6 +173,22 @@ def show_settings_ui(parent_window):
     )
     btn_backup_pc.pack(side="right", padx=(2, 0))
 
+    btn_restore_pc = ctk.CTkButton(
+        timer_frame,
+        text="恢复pc_settings.bin",
+        font=("Microsoft YaHei", 12, "bold"),
+        width=160,
+        height=30,
+        fg_color="transparent",
+        text_color="#3B8ED0",
+        hover_color="#E0E8FF",
+        border_width=2,
+        border_color="#3B8ED0",
+        corner_radius=6,
+        command=restore_pc_settings_bin
+    )
+    btn_restore_pc.pack(side="right", padx=(10, 2))
+
     # --- 说明文字 ---
     ctk.CTkLabel(frame,
                  text="  ● 断网：\n"
@@ -181,7 +197,7 @@ def show_settings_ui(parent_window):
                       "  - 卡085，建议使用断开服务器链接\n"
                       "  - 为了避免掉分红，第一次使用请先点击删除pc_settings.bin，程序会删除原来的\n"
                       "  - 5分钟之后点击备份pc_settings.bin，程序会复制到exe目录下\n"
-                      "  - 之后每次断网都会使用这个备份替换pc_settings.bin\n"
+                      "  - 下次断网前请点击恢复pc_settings.bin，将备份替换\n"
                       "  - 恢复联网会杀启动器，回到菜单，无需退出\n"                      
                       "  - 快到结算位置了再按\n"
                       "  - 也可用于赌场转盘，转之前断网，转到就恢复\n"
@@ -603,15 +619,18 @@ def backup_pc_settings_bin():
 def restore_pc_settings_bin():
     path = find_pc_settings_bin()
     if not path:
+        messagebox.showwarning("提示", "未找到 pc_settings.bin")
         return
     backup_path = get_backup_path()
     if not os.path.exists(backup_path):
+        messagebox.showwarning("提示", "未找到备份文件")
         return
     try:
         shutil.copy2(backup_path, path)
         print(f"[pc_settings] 已恢复: {backup_path} -> {path}")
+        messagebox.showinfo("提示", "已恢复")
     except Exception as e:
-        print(f"[pc_settings] 恢复失败: {e}")
+        messagebox.showerror("错误", f"恢复失败: {e}")
 
 
 def main():
@@ -645,7 +664,6 @@ def main():
                 if time.time() - start_time > times:
                     print("超过时间，跳出循环")
                     recover_natdown()
-                    restore_pc_settings_bin()
 
                     if _overlay:
                         _overlay.destroy()
@@ -667,7 +685,6 @@ def main():
 
     else:
         recover_natdown()
-        restore_pc_settings_bin()
 
         if _overlay:
             _overlay.destroy()
