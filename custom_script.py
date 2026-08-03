@@ -14,7 +14,7 @@ def show_settings_ui(parent_window):
     # 创建置顶设置窗口
     settings_window = ctk.CTkToplevel(parent_window)
     settings_window.title("自定义宏设置")
-    settings_window.geometry("600x700")
+    settings_window.geometry("600x750")
     settings_window.resizable(False, False)
     settings_window.transient(parent_window)  # 跟随父窗口
     settings_window.grab_set()  # 模态窗口
@@ -22,25 +22,8 @@ def show_settings_ui(parent_window):
     # 获取配置管理器（依赖父窗口传入 config）
     config = parent_window.config
 
-    # 配置网格（四列等比）
-    settings_window.grid_columnconfigure(0, weight=1)  # 热键
-    settings_window.grid_columnconfigure(1, weight=2)  # 名字（更宽一些）
-    settings_window.grid_columnconfigure(2, weight=1)  # 次数
-    settings_window.grid_columnconfigure(3, weight=1)  # 开关
-
-    # 表头
-    headers = ["热键", "名称", "点击修改代码", "启用"]
-    for col, text in enumerate(headers):
-        lbl = ctk.CTkLabel(
-            settings_window,
-            text=text,
-            font=("Microsoft YaHei UI", 18, "bold"),
-            text_color="#3B8ED0"
-        )
-        lbl.grid(row=0, column=col, padx=15, pady=(15, 10), sticky="w")
-
-    # 三个联系人配置
-    contact_ids = ["script_0","script_1","script_2","script_3","script_4","script_5","script_6","script_7","script_8","script_9"]
+    contact_ids_all = ["script_0","script_1","script_2","script_3","script_4","script_5","script_6","script_7","script_8","script_9",
+                       "script_10","script_11","script_12","script_13","script_14","script_15","script_16","script_17","script_18","script_19"]
 
     def start_recording(contact_id, btn_widget):
         """开始录制热键（参考 gui_app.request_recording）"""
@@ -94,92 +77,127 @@ def show_settings_ui(parent_window):
         config.update_switch_state(contact_id, is_on)
         print(f"[PhoneCall] {contact_id} 启用状态: {is_on}")
 
-    # 创建多行数据
-    for row_idx, contact_id in enumerate(contact_ids, start=1):
-        data = config.get_function_data(contact_id)
-        if not data:
-            continue
+    def _render_tab_rows(tab_frame, ids):
+        """在标签页内渲染表头 + 数据行"""
+        tab_frame.grid_columnconfigure(0, weight=1)
+        tab_frame.grid_columnconfigure(1, weight=2)
+        tab_frame.grid_columnconfigure(2, weight=1)
+        tab_frame.grid_columnconfigure(3, weight=1)
 
-        # 第一列：热键按钮（可录制）
-        btn_key = ctk.CTkButton(
-            settings_window,
-            text=data.get('key', 'NONE'),
-            font=("Microsoft YaHei UI", 18, "bold"),
-            text_color="black",
-            fg_color="white",
-            hover_color="#F0F0F0",
-            border_width=2,
-            border_color="#3B8ED0",
-            width=100,
-            height=40,
-            corner_radius=0
-        )
-        btn_key.configure(command=lambda cid=contact_id, btn=btn_key: start_recording(cid, btn))
-        btn_key.grid(row=row_idx, column=0, padx=5, pady=8, sticky="w")
+        headers = ["热键", "名称", "点击修改代码", "启用"]
+        for col, text in enumerate(headers):
+            lbl = ctk.CTkLabel(
+                tab_frame,
+                text=text,
+                font=("Microsoft YaHei UI", 18, "bold"),
+                text_color="#3B8ED0"
+            )
+            lbl.grid(row=0, column=col, padx=15, pady=(15, 10), sticky="w")
 
-        # ==================== 修改：将 Label 改为 Entry ====================
-        # 第二列：名字（可编辑输入框）
-        entry_name = ctk.CTkEntry(
-            settings_window,
-            font=("Microsoft YaHei UI", 18, "bold"),
-            height=35,
-            border_width=2,
-            border_color="#CCCCCC",
-            fg_color="white",
-            text_color="black"
-        )
-        entry_name.insert(0, str(data.get('name', contact_id)))
-        entry_name.grid(row=row_idx, column=1, padx=5, pady=8, sticky="ew")
+        for row_idx, contact_id in enumerate(ids, start=1):
+            data = config.get_function_data(contact_id)
+            if not data:
+                continue
 
-        # 绑定保存事件（失焦或回车）
-        entry_name.bind('<FocusOut>', lambda e, cid=contact_id, ent=entry_name: update_name(cid, ent))
-        entry_name.bind('<Return>', lambda e, cid=contact_id, ent=entry_name: update_name(cid, ent))
-        # =================================================================
+            btn_key = ctk.CTkButton(
+                tab_frame,
+                text=data.get('key', 'NONE'),
+                font=("Microsoft YaHei UI", 18, "bold"),
+                text_color="black",
+                fg_color="white",
+                hover_color="#F0F0F0",
+                border_width=2,
+                border_color="#3B8ED0",
+                width=100,
+                height=40,
+                corner_radius=0
+            )
+            btn_key.configure(command=lambda cid=contact_id, btn=btn_key: start_recording(cid, btn))
+            btn_key.grid(row=row_idx, column=0, padx=5, pady=8, sticky="w")
 
-        # 第三列：次数（可编辑输入框）
-        # ==================== 修改：第三列改为编辑按钮 ====================
-        btn_edit = ctk.CTkButton(
-            settings_window,
-            text="编辑",
-            font=("Microsoft YaHei UI", 18, "bold"),
-            width=100,
-            height=35,
-            corner_radius=5,
-            fg_color="#3B8ED0",
-            hover_color="#2B6EA8"
-        )
-        btn_edit.configure(command=lambda cid=contact_id: open_macro_editor(cid))
-        btn_edit.grid(row=row_idx, column=2, padx=5, pady=8)
-        # =================================================================
+            entry_name = ctk.CTkEntry(
+                tab_frame,
+                font=("Microsoft YaHei UI", 18, "bold"),
+                height=35,
+                border_width=2,
+                border_color="#CCCCCC",
+                fg_color="white",
+                text_color="black"
+            )
+            entry_name.insert(0, str(data.get('name', contact_id)))
+            entry_name.grid(row=row_idx, column=1, padx=5, pady=8, sticky="ew")
+            entry_name.bind('<FocusOut>', lambda e, cid=contact_id, ent=entry_name: update_name(cid, ent))
+            entry_name.bind('<Return>', lambda e, cid=contact_id, ent=entry_name: update_name(cid, ent))
 
-        # 第四列：开关（启用/禁用）
-        switch = ctk.CTkSwitch(
-            settings_window,
-            text="",
-            width=100,
-            height=30,
-            progress_color="#4CC768",
-            fg_color="#FF474C",
-            button_color="white",
-            onvalue=True,
-            offvalue=False
-        )
-        if data.get('enabled', True):
-            switch.select()
-        else:
-            switch.deselect()
+            btn_edit = ctk.CTkButton(
+                tab_frame,
+                text="编辑",
+                font=("Microsoft YaHei UI", 18, "bold"),
+                width=100,
+                height=35,
+                corner_radius=5,
+                fg_color="#3B8ED0",
+                hover_color="#2B6EA8"
+            )
+            btn_edit.configure(command=lambda cid=contact_id: open_macro_editor(cid))
+            btn_edit.grid(row=row_idx, column=2, padx=5, pady=8)
 
-        switch.configure(command=lambda cid=contact_id, sw=switch: toggle_switch(cid, sw))
-        switch.grid(row=row_idx, column=3, padx=5, pady=8, sticky="e")
+            switch = ctk.CTkSwitch(
+                tab_frame,
+                text="",
+                width=100,
+                height=30,
+                progress_color="#4CC768",
+                fg_color="#FF474C",
+                button_color="white",
+                onvalue=True,
+                offvalue=False
+            )
+            if data.get('enabled', True):
+                switch.select()
+            else:
+                switch.deselect()
+            switch.configure(command=lambda cid=contact_id, sw=switch: toggle_switch(cid, sw))
+            switch.grid(row=row_idx, column=3, padx=5, pady=8, sticky="e")
 
-    # 底部提示文字
+    # 标签页控件
+    tabview = ctk.CTkTabview(
+        settings_window,
+        corner_radius=8,
+        fg_color="transparent",
+        segmented_button_fg_color="#F0F0F0",
+        segmented_button_selected_color="#3B8ED0",
+        segmented_button_selected_hover_color="#2B6EA8",
+        segmented_button_unselected_color="#D0D0D0",
+        segmented_button_unselected_hover_color="#C0C0C0",
+        text_color="black",
+        text_color_disabled="#888888"
+    )
+    tabview.grid(row=0, column=0, columnspan=4, sticky="nsew", padx=10, pady=(5, 5))
+    settings_window.grid_rowconfigure(0, weight=1)
+    settings_window.grid_columnconfigure(0, weight=1)
+    settings_window.grid_columnconfigure(1, weight=1)
+    settings_window.grid_columnconfigure(2, weight=1)
+    settings_window.grid_columnconfigure(3, weight=1)
+
+    tab1 = tabview.add("第1页  (1-10)")
+    tab2 = tabview.add("第2页 (11-20)")
+
+    tabview._segmented_button.configure(
+        font=("Microsoft YaHei UI", 18, "bold"),
+        height=40
+    )
+
+    _render_tab_rows(tab1, contact_ids_all[:10])
+    _render_tab_rows(tab2, contact_ids_all[10:])
+
     lbl_tip = ctk.CTkLabel(
         settings_window,
         text="修改名称后，按 Enter 键或点击空白处保存",
         font=("Microsoft YaHei UI", 20, "bold"),
         text_color="#888888"
     )
-    lbl_tip.grid(row=12, column=0, columnspan=4, pady=(15, 10))
+    lbl_tip.grid(row=1, column=0, columnspan=4, pady=(15, 10))
 
 #-----------------小窗口-----------------------------
 
@@ -366,3 +384,13 @@ def run_script_6(): run("script_6")
 def run_script_7(): run("script_7")
 def run_script_8(): run("script_8")
 def run_script_9(): run("script_9")
+def run_script_10(): run("script_10")
+def run_script_11(): run("script_11")
+def run_script_12(): run("script_12")
+def run_script_13(): run("script_13")
+def run_script_14(): run("script_14")
+def run_script_15(): run("script_15")
+def run_script_16(): run("script_16")
+def run_script_17(): run("script_17")
+def run_script_18(): run("script_18")
+def run_script_19(): run("script_19")

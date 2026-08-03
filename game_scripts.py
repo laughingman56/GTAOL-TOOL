@@ -368,6 +368,46 @@ class ScriptExecutor:
                 print(">>> 运行按键宏9")
                 custom_script.run_script_9()
 
+            elif func_id == "script_10":
+                print(">>> 运行按键宏10")
+                custom_script.run_script_10()
+
+            elif func_id == "script_11":
+                print(">>> 运行按键宏11")
+                custom_script.run_script_11()
+
+            elif func_id == "script_12":
+                print(">>> 运行按键宏12")
+                custom_script.run_script_12()
+
+            elif func_id == "script_13":
+                print(">>> 运行按键宏13")
+                custom_script.run_script_13()
+
+            elif func_id == "script_14":
+                print(">>> 运行按键宏14")
+                custom_script.run_script_14()
+
+            elif func_id == "script_15":
+                print(">>> 运行按键宏15")
+                custom_script.run_script_15()
+
+            elif func_id == "script_16":
+                print(">>> 运行按键宏16")
+                custom_script.run_script_16()
+
+            elif func_id == "script_17":
+                print(">>> 运行按键宏17")
+                custom_script.run_script_17()
+
+            elif func_id == "script_18":
+                print(">>> 运行按键宏18")
+                custom_script.run_script_18()
+
+            elif func_id == "script_19":
+                print(">>> 运行按键宏19")
+                custom_script.run_script_19()
+
             print(f"[V] 脚本 {func_id} 自然执行完毕")
 
         except SystemExit:

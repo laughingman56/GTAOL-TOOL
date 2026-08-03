@@ -30,7 +30,7 @@ def show_settings_ui(parent_window):
     # 1. 创建顶级弹窗
     settings_win = ctk.CTkToplevel(parent_window)
     settings_win.title("断网设置")
-    settings_win.geometry("800x600")
+    settings_win.geometry("850x700")
     settings_win.resizable(False, False)
 
     # 窗口置顶与模态
@@ -175,8 +175,8 @@ def show_settings_ui(parent_window):
 
     btn_restore_pc = ctk.CTkButton(
         timer_frame,
-        text="恢复pc_settings.bin",
-        font=("Microsoft YaHei", 12, "bold"),
+        text="替换pc_settings.bin",
+        font=("Microsoft YaHei", 18, "bold"),
         width=160,
         height=30,
         fg_color="transparent",
@@ -193,15 +193,22 @@ def show_settings_ui(parent_window):
     ctk.CTkLabel(frame,
                  text="  ● 断网：\n"
                       "  - 按一下是断网，再按一下是恢复\n"
-                      "\n"
-                      "  - 卡085，建议使用断开服务器链接\n"
+                     "\n"                       
+                      "  ● 步骤：\n"
+                      "  - 卡085，使用断开服务器链接\n"
+                      "  - 快到结算位置了再按\n"
+                      "  - 回到菜单，再按一次，恢复联网\n"
+                      "  - 然后退出游戏,等待steam启动游戏变绿\n"
+                      "  - 打开断网设置，点击替换pc_settings.bin按键\n"
+                     "\n" 
+                      "  ● 防止掉红：\n"
                       "  - 为了避免掉分红，第一次使用请先点击删除pc_settings.bin，程序会删除原来的\n"
                       "  - 5分钟之后点击备份pc_settings.bin，程序会复制到exe目录下\n"
-                      "  - 下次断网前请点击恢复pc_settings.bin，将备份替换\n"
-                      "  - 恢复联网会杀启动器，回到菜单，无需退出\n"                      
-                      "  - 快到结算位置了再按\n"
+                      "  - 退出游戏后请点击替换pc_settings.bin，将备份替换\n"
+                      "\n"                      
+
                       "  - 也可用于赌场转盘，转之前断网，转到就恢复\n"
-                      "\n"
+                      "  ● 卡185：\n"
                       "  - 卡185，必须使用窗口模式\n"
                       "  - 断网功能使用quellgta的wfpcon断网\n"
                       "  - 感谢mageangela，M3351AN 渟雲，onelymaker",
@@ -668,10 +675,10 @@ def main():
                     if _overlay:
                         _overlay.destroy()
 
-                    if rule in (0, 3):
+                    #if rule in (0, 3):
                         # 杀掉启动器
-                        print("杀掉启动器")
-                        kill_process_by_name("Launcher.exe")
+                        #print("杀掉启动器")
+                        #kill_process_by_name("Launcher.exe")
 
 
                     break
