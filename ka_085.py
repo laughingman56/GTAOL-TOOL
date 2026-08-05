@@ -726,10 +726,11 @@ def main():
             while True:
                 if is_black_screen():
                     black_count += 1
-                    if black_count >= 4:
-                        print("检测到黑屏持续2秒，杀死游戏")
+                    if black_count >= 10:
+                        print("检测到黑屏持续5秒，杀死游戏")
                         kill_process_by_name("GTA5.exe")
                         kill_process_by_name("GTA5_Enhanced.exe")
+                        kill_process_by_name("Launcher.exe")
                         recover_natdown()
                         time.sleep(5)
                         restore_pc_settings_bin()
