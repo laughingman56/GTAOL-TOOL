@@ -697,10 +697,10 @@ def main():
             _overlay.destroy()
 
 
-        if rule in (0, 3):
+        #if rule in (0, 3):
             # 杀掉启动器
-            print("杀掉启动器")
-            kill_process_by_name("Launcher.exe")
+            #print("杀掉启动器")
+            #kill_process_by_name("Launcher.exe")
 
 
 
