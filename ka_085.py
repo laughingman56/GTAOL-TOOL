@@ -43,7 +43,7 @@ def show_settings_ui(parent_window):
     # 2. 准备数据
     cfg = ConfigManager()
     data = cfg.get_all_data()
-    bot_options = ["卡085","断开服务器链接", "断开云存档链接", "断开交易链接","断开云存档和交易链接","全部断网","战局锁单","卡185_窗口模式"]  # 对应索引 0, 1, 2
+    bot_options = ["自动卡085","断开服务器链接", "断开云存档链接", "断开交易链接","断开云存档和交易链接","全部断网","战局锁单","卡185_窗口模式"]  # 对应索引 0, 1, 2
 
     # 获取当前配置索引 (防止越界)
     idx1 = data.get("nat_down", {}).get("rule", 0)
@@ -680,7 +680,7 @@ def main():
     times = data.get("nat_down", {}).get("time", 0)
     rule = data.get("nat_down", {}).get("rule", 0)
 
-    d = {0:"卡085",1:"断开服务器链接",2:"断开云存档链接",3:"断开交易链接", 4:"断开云存档和交易链接", 5:"全部断网", 6:"战局锁单",7:"卡185_窗口模式"}
+    d = {0:"自动卡085",1:"断开服务器链接",2:"断开云存档链接",3:"断开交易链接", 4:"断开云存档和交易链接", 5:"全部断网", 6:"战局锁单",7:"卡185_窗口模式"}
     text =(f"已断网,规则：{d[rule]}")
 
 
@@ -692,18 +692,23 @@ def main():
 
 
         if rule == 0:
-            # 自动卡085：无限检测黑屏，检测到后杀游戏→删规则→替换pc_settings
+            # 自动卡085：无限检测黑屏，连续2秒黑屏后杀游戏→删规则→替换pc_settings
+            black_count = 0
             while True:
                 if is_black_screen():
-                    print("检测到黑屏，杀死游戏")
-                    kill_process_by_name("GTA5.exe")
-                    kill_process_by_name("GTA5_Enhanced.exe")
-                    recover_natdown()
-                    time.sleep(1)
-                    restore_pc_settings_bin()
-                    if _overlay:
-                        _overlay.destroy()
-                    break
+                    black_count += 1
+                    if black_count >= 4:
+                        print("检测到黑屏持续2秒，杀死游戏")
+                        kill_process_by_name("GTA5.exe")
+                        kill_process_by_name("GTA5_Enhanced.exe")
+                        recover_natdown()
+                        time.sleep(1)
+                        restore_pc_settings_bin()
+                        if _overlay:
+                            _overlay.destroy()
+                        break
+                else:
+                    black_count = 0
                 if _overlay:
                     _overlay.update(f"{text},检测黑屏中...")
                 time.sleep(0.5)
