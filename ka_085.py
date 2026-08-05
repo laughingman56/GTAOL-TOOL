@@ -43,11 +43,11 @@ def show_settings_ui(parent_window):
     # 2. 准备数据
     cfg = ConfigManager()
     data = cfg.get_all_data()
-    bot_options = ["自动卡085","断开服务器链接", "断开云存档链接", "断开交易链接","断开云存档和交易链接","全部断网","战局锁单","卡185_窗口模式"]  # 对应索引 0, 1, 2
+    bot_options = ["自动卡085","断开服务器链接", "断开云存档链接", "断开交易链接","断开云存档和交易链接","全部断网","战局锁单","卡185_窗口模式","卡185_挂起进程"]  # 对应索引 0, 1, 2
 
     # 获取当前配置索引 (防止越界)
     idx1 = data.get("nat_down", {}).get("rule", 0)
-    if not (0 <= idx1 <= 7): idx1 = 0
+    if not (0 <= idx1 <= 8): idx1 = 0
 
     # 获取定时配置
     timer_enabled = data.get("nat_down", {}).get("time_limited", False)
@@ -214,7 +214,8 @@ def show_settings_ui(parent_window):
 
                       "  - 也可用于赌场转盘，转之前断网，转到就恢复\n"
                       "  ● 卡185：\n"
-                      "  - 卡185，必须使用窗口模式\n"
+                      "  - 卡185窗口模式，必须使用窗口模式\n"
+                      "  - 卡185挂起进程，按一下挂起，再按一下恢复\n"
                       "  - 断网功能使用quellgta的wfpcon断网\n"
                       "  - 感谢mageangela，M3351AN 渟雲，onelymaker",
                  font=("Microsoft YaHei", 18, "bold"),
@@ -330,6 +331,25 @@ def quick_click():
 
     # 此时，游戏的系统菜单（移动/大小/关闭等）已经弹出了！
     # 如果你后续需要用键盘选择菜单里的选项，可以直接用 pydirectinput 按上下箭头和回车
+
+
+def suspend_gta_processes():
+    for proc in psutil.process_iter(['name']):
+        if proc.info['name'].lower() in ("gta5.exe", "gta5_enhanced.exe"):
+            try:
+                proc.suspend()
+                print(f"已挂起: {proc.info['name']}")
+            except Exception as e:
+                print(f"挂起失败: {e}")
+
+def resume_gta_processes():
+    for proc in psutil.process_iter(['name']):
+        if proc.info['name'].lower() in ("gta5.exe", "gta5_enhanced.exe"):
+            try:
+                proc.resume()
+                print(f"已恢复: {proc.info['name']}")
+            except Exception as e:
+                print(f"恢复失败: {e}")
 
 
 def run_natdown():
@@ -459,6 +479,12 @@ def run_natdown():
             #主要命令
             quick_click()
 
+        elif data.get("nat_down", {}).get("rule", 0) == 8:
+            print(f"正在执行: 卡185挂起进程")
+
+            #主要命令
+            suspend_gta_processes()
+
 
         else:
             print(f"断网失败")
@@ -495,6 +521,9 @@ def recover_natdown():
             pydirectinput.move(500, 500)
             pydirectinput.leftClick()
 
+        elif data.get("nat_down", {}).get("rule", 0) == 8:
+
+            resume_gta_processes()
 
         else:
             # 使用 subprocess.Popen 相当于易语言运行命令参数中的“假”（不等待，异步执行）
@@ -680,7 +709,7 @@ def main():
     times = data.get("nat_down", {}).get("time", 0)
     rule = data.get("nat_down", {}).get("rule", 0)
 
-    d = {0:"自动卡085",1:"断开服务器链接",2:"断开云存档链接",3:"断开交易链接", 4:"断开云存档和交易链接", 5:"全部断网", 6:"战局锁单",7:"卡185_窗口模式"}
+    d = {0:"自动卡085",1:"断开服务器链接",2:"断开云存档链接",3:"断开交易链接", 4:"断开云存档和交易链接", 5:"全部断网", 6:"战局锁单",7:"卡185_窗口模式",8:"卡185_挂起进程"}
     text =(f"已断网,规则：{d[rule]}")
 
 
