@@ -202,14 +202,14 @@ def show_settings_ui(parent_window):
                       "  - 卡085，使用断开服务器链接\n"
                       "  - 快到结算位置了再按\n"
                       "  - 检测到黑屏会自动处理，无需手动操作\n"
-                      "  - 或回到菜单，再按一次，手动恢复联网\n"
-                      "  - 然后退出游戏,等待steam启动游戏变绿\n"
-                      "  - 打开断网设置，点击替换pc_settings.bin按键\n"
+                     
+                      
+                     
                      "\n" 
                       "  ● 防止掉红：\n"
                       "  - 为了避免掉分红，第一次使用请先点击删除pc_settings.bin，程序会删除原来的\n"
                       "  - 5分钟之后点击备份pc_settings.bin，程序会复制到exe目录下\n"
-                      "  - 退出游戏后请点击替换pc_settings.bin，将备份替换\n"
+                     
                       "\n"                      
 
                       "  - 也可用于赌场转盘，转之前断网，转到就恢复\n"
@@ -731,7 +731,7 @@ def main():
                         kill_process_by_name("GTA5.exe")
                         kill_process_by_name("GTA5_Enhanced.exe")
                         recover_natdown()
-                        time.sleep(1)
+                        time.sleep(5)
                         restore_pc_settings_bin()
                         if _overlay:
                             _overlay.destroy()
