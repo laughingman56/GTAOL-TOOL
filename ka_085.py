@@ -18,6 +18,9 @@ import threading
 import queue
 import customtkinter as ctk
 from config_manager import ConfigManager
+import mss
+from PIL import Image
+from mss_dpi import ResolutionAdapter
 
 #------------guii界面---------------
 
@@ -40,11 +43,11 @@ def show_settings_ui(parent_window):
     # 2. 准备数据
     cfg = ConfigManager()
     data = cfg.get_all_data()
-    bot_options = ["断开服务器链接", "断开云存档链接", "断开交易链接","断开云存档和交易链接","全部断网","战局锁单","卡185"]  # 对应索引 0, 1, 2
+    bot_options = ["卡085","断开服务器链接", "断开云存档链接", "断开交易链接","断开云存档和交易链接","全部断网","战局锁单","卡185_窗口模式"]  # 对应索引 0, 1, 2
 
     # 获取当前配置索引 (防止越界)
     idx1 = data.get("nat_down", {}).get("rule", 0)
-    if not (0 <= idx1 <= 6): idx1 = 0
+    if not (0 <= idx1 <= 7): idx1 = 0
 
     # 获取定时配置
     timer_enabled = data.get("nat_down", {}).get("time_limited", False)
@@ -195,9 +198,11 @@ def show_settings_ui(parent_window):
                       "  - 按一下是断网，再按一下是恢复\n"
                      "\n"                       
                       "  ● 步骤：\n"
+                      "  - 卡085，自动流程：断网→检测黑屏→杀游戏→删规则→替换pc_settings\n"
                       "  - 卡085，使用断开服务器链接\n"
                       "  - 快到结算位置了再按\n"
-                      "  - 回到菜单，再按一次，恢复联网\n"
+                      "  - 检测到黑屏会自动处理，无需手动操作\n"
+                      "  - 或回到菜单，再按一次，手动恢复联网\n"
                       "  - 然后退出游戏,等待steam启动游戏变绿\n"
                       "  - 打开断网设置，点击替换pc_settings.bin按键\n"
                      "\n" 
@@ -227,6 +232,21 @@ def kill_process_by_name(process_name):
     print(f"尝试终止: {process_name}")
     # >nul 2>&1 用于隐藏系统命令的输出，让界面更清爽
     os.system(f'taskkill /F /IM "{process_name}" >nul 2>&1')
+
+def is_black_screen():
+    sct = mss.mss()
+    try:
+        base_full_screen = (0, 0, 2560, 1440)
+        monitor = ResolutionAdapter.get_mss_config(base_full_screen)
+        sct_img = sct.grab(monitor)
+        img = Image.frombytes("RGB", sct_img.size, sct_img.bgra, "raw", "BGRX")
+        small_img = img.resize((100, 100)).convert('L')
+        pixels = list(small_img.getdata())
+        black_count = sum(1 for p in pixels if p < 20)
+        ratio = black_count / len(pixels)
+        return ratio > 0.80
+    finally:
+        sct.close()
 
 def is_admin():
     """检查当前是否具有管理员权限"""
@@ -278,7 +298,7 @@ def get_resource_path(relative_path):
 def delay():
     cfg = ConfigManager()
     data = cfg.get_all_data()
-    if data.get("nat_down", {}).get("rule", 0) == 1:
+    if data.get("nat_down", {}).get("rule", 0) == 2:
         return 0.1
     return  0
 
@@ -340,6 +360,13 @@ def run_natdown():
         # 使用 subprocess.Popen 相当于易语言运行命令参数中的“假”（不等待，异步执行）
 
         if data.get("nat_down", {}).get("rule", 0) == 0:
+            print(f"正在执行: 卡085(断开服务器链接)")
+
+            #主要命令
+            subprocess.Popen(f'"{exe_path}" -c -p "{gta_path}" -proto tcp', shell=True)
+
+
+        elif data.get("nat_down", {}).get("rule", 0) == 1:
             print(f"正在执行: 断开服务器链接")
 
             #保险命令，进程模式断开服务器链接
@@ -352,7 +379,7 @@ def run_natdown():
             #subprocess.Popen(f'"{exe_path}" -c -p "{gta_path}"  -rp 443', shell=True)
 
 
-        elif data.get("nat_down", {}).get("rule", 0) == 1:
+        elif data.get("nat_down", {}).get("rule", 0) == 2:
             print(f"正在执行: 断开云存档链接")
 
             #保险命令，进程模式断开服务器链接
@@ -366,7 +393,7 @@ def run_natdown():
 
             subprocess.Popen(f'"{exe_path}" -c -p "{gta_path}"  -ip "{ip_0}"', shell=True)
 
-        elif data.get("nat_down", {}).get("rule", 0) == 2:
+        elif data.get("nat_down", {}).get("rule", 0) == 3:
             print(f"正在执行: 断开交易链接")
 
             #保险命令，进程模式断开服务器链接
@@ -385,7 +412,7 @@ def run_natdown():
             subprocess.Popen(f'"{exe_path}" -c -p "{gta_path}"  -ip "{ip_1}"', shell=True)
             subprocess.Popen(f'"{exe_path}" -c -p "{gta_path}"  -ip "{ip_2}"', shell=True)
 
-        elif data.get("nat_down", {}).get("rule", 0) == 3:
+        elif data.get("nat_down", {}).get("rule", 0) == 4:
             print(f"正在执行: 断开云存档和交易链接")
 
             #保险命令，进程模式断开服务器链接
@@ -411,7 +438,7 @@ def run_natdown():
 
 
 
-        elif data.get("nat_down", {}).get("rule", 0) == 4:
+        elif data.get("nat_down", {}).get("rule", 0) == 5:
             print(f"正在执行: 全部断网")
 
             #保险命令，进程模式断开服务器链接
@@ -420,13 +447,13 @@ def run_natdown():
             #主要命令
             subprocess.Popen(f'"{exe_path}" -c -p "{gta_path}" ', shell=True)
 
-        elif data.get("nat_down", {}).get("rule", 0) == 5:
+        elif data.get("nat_down", {}).get("rule", 0) == 6:
             print(f"正在执行: 战局锁单")
 
             #主要命令
             subprocess.Popen(f'"{exe_path}" -c -p "{gta_path}"  -lp 6672', shell=True)
 
-        elif data.get("nat_down", {}).get("rule", 0) == 6:
+        elif data.get("nat_down", {}).get("rule", 0) == 7:
             print(f"正在执行: 卡185")
 
             #主要命令
@@ -463,7 +490,7 @@ def recover_natdown():
     command = f'"{exe_path}" -d'
 
     try:
-        if data.get("nat_down", {}).get("rule", 0) == 6:
+        if data.get("nat_down", {}).get("rule", 0) == 7:
 
             pydirectinput.move(500, 500)
             pydirectinput.leftClick()
@@ -653,7 +680,7 @@ def main():
     times = data.get("nat_down", {}).get("time", 0)
     rule = data.get("nat_down", {}).get("rule", 0)
 
-    d = {0:"断开服务器链接",1:"断开云存档链接",2:"断开交易链接",3:"断开云存档和交易链接", 4:"全部断网", 5:"战局锁单",6:"卡185"}
+    d = {0:"卡085",1:"断开服务器链接",2:"断开云存档链接",3:"断开交易链接", 4:"断开云存档和交易链接", 5:"全部断网", 6:"战局锁单",7:"卡185_窗口模式"}
     text =(f"已断网,规则：{d[rule]}")
 
 
@@ -664,7 +691,24 @@ def main():
         overlay.show(text)
 
 
-        if time_limited:
+        if rule == 0:
+            # 自动卡085：无限检测黑屏，检测到后杀游戏→删规则→替换pc_settings
+            while True:
+                if is_black_screen():
+                    print("检测到黑屏，杀死游戏")
+                    kill_process_by_name("GTA5.exe")
+                    kill_process_by_name("GTA5_Enhanced.exe")
+                    recover_natdown()
+                    time.sleep(1)
+                    restore_pc_settings_bin()
+                    if _overlay:
+                        _overlay.destroy()
+                    break
+                if _overlay:
+                    _overlay.update(f"{text},检测黑屏中...")
+                time.sleep(0.5)
+
+        elif time_limited:
 
             while True:
 
