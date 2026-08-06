@@ -199,8 +199,26 @@ class ConfigManager:
             "script_17": {"name": "", "key": "", "father": "custom_script", "enabled": False, "code": ""},
             "script_18": {"name": "", "key": "", "father": "custom_script", "enabled": False, "code": ""},
             "script_19": {"name": "", "key": "", "father": "custom_script", "enabled": False, "code": ""},
-
-
+            "script_20": {"name": "", "key": "", "father": "custom_script", "enabled": False, "code": ""},
+            "script_21": {"name": "", "key": "", "father": "custom_script", "enabled": False, "code": ""},
+            "script_22": {"name": "", "key": "", "father": "custom_script", "enabled": False, "code": ""},
+            "script_23": {"name": "", "key": "", "father": "custom_script", "enabled": False, "code": ""},
+            "script_24": {"name": "", "key": "", "father": "custom_script", "enabled": False, "code": ""},
+            "script_25": {"name": "", "key": "", "father": "custom_script", "enabled": False, "code": ""},
+            "script_26": {"name": "", "key": "", "father": "custom_script", "enabled": False, "code": ""},
+            "script_27": {"name": "", "key": "", "father": "custom_script", "enabled": False, "code": ""},
+            "script_28": {"name": "", "key": "", "father": "custom_script", "enabled": False, "code": ""},
+            "script_29": {"name": "", "key": "", "father": "custom_script", "enabled": False, "code": ""},
+            "script_30": {"name": "", "key": "", "father": "custom_script", "enabled": False, "code": ""},
+            "script_31": {"name": "", "key": "", "father": "custom_script", "enabled": False, "code": ""},
+            "script_32": {"name": "", "key": "", "father": "custom_script", "enabled": False, "code": ""},
+            "script_33": {"name": "", "key": "", "father": "custom_script", "enabled": False, "code": ""},
+            "script_34": {"name": "", "key": "", "father": "custom_script", "enabled": False, "code": ""},
+            "script_35": {"name": "", "key": "", "father": "custom_script", "enabled": False, "code": ""},
+            "script_36": {"name": "", "key": "", "father": "custom_script", "enabled": False, "code": ""},
+            "script_37": {"name": "", "key": "", "father": "custom_script", "enabled": False, "code": ""},
+            "script_38": {"name": "", "key": "", "father": "custom_script", "enabled": False, "code": ""},
+            "script_39": {"name": "", "key": "", "father": "custom_script", "enabled": False, "code": ""},
 
 
 

@@ -726,13 +726,20 @@ def main():
             while True:
                 if is_black_screen():
                     black_count += 1
-                    if black_count >= 10:
+                    if black_count >= 5:
                         print("检测到黑屏持续5秒，杀死游戏")
+                        if _overlay:
+                            _overlay.update(f"{text},检测到黑屏，杀死游戏")
+
                         kill_process_by_name("GTA5.exe")
                         kill_process_by_name("GTA5_Enhanced.exe")
                         kill_process_by_name("Launcher.exe")
                         recover_natdown()
-                        time.sleep(5)
+
+                        wait_time = time.time()
+                        if _overlay:
+                            _overlay.update(f"{text},等待：{int(10-(time.time() - wait_time))}秒")
+                        time.sleep(10)
                         restore_pc_settings_bin()
                         if _overlay:
                             _overlay.destroy()
@@ -741,7 +748,7 @@ def main():
                     black_count = 0
                 if _overlay:
                     _overlay.update(f"{text},检测黑屏中...")
-                time.sleep(0.5)
+                time.sleep(1)
 
         elif time_limited:
 

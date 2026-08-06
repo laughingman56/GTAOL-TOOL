@@ -23,7 +23,9 @@ def show_settings_ui(parent_window):
     config = parent_window.config
 
     contact_ids_all = ["script_0","script_1","script_2","script_3","script_4","script_5","script_6","script_7","script_8","script_9",
-                       "script_10","script_11","script_12","script_13","script_14","script_15","script_16","script_17","script_18","script_19"]
+                       "script_10","script_11","script_12","script_13","script_14","script_15","script_16","script_17","script_18","script_19",
+                       "script_20","script_21","script_22","script_23","script_24","script_25","script_26","script_27","script_28","script_29",
+                       "script_30","script_31","script_32","script_33","script_34","script_35","script_36","script_37","script_38","script_39"]
 
     def start_recording(contact_id, btn_widget):
         """开始录制热键（参考 gui_app.request_recording）"""
@@ -182,14 +184,18 @@ def show_settings_ui(parent_window):
 
     tab1 = tabview.add("第1页  (1-10)")
     tab2 = tabview.add("第2页 (11-20)")
+    tab3 = tabview.add("第3页 (21-30)")
+    tab4 = tabview.add("第4页 (31-40)")
 
     tabview._segmented_button.configure(
         font=("Microsoft YaHei UI", 18, "bold"),
         height=40
     )
 
-    _render_tab_rows(tab1, contact_ids_all[:10])
-    _render_tab_rows(tab2, contact_ids_all[10:])
+    _render_tab_rows(tab1, contact_ids_all[0:10])
+    _render_tab_rows(tab2, contact_ids_all[10:20])
+    _render_tab_rows(tab3, contact_ids_all[20:30])
+    _render_tab_rows(tab4, contact_ids_all[30:40])
 
     lbl_tip = ctk.CTkLabel(
         settings_window,
@@ -394,3 +400,23 @@ def run_script_16(): run("script_16")
 def run_script_17(): run("script_17")
 def run_script_18(): run("script_18")
 def run_script_19(): run("script_19")
+def run_script_20(): run("script_20")
+def run_script_21(): run("script_21")
+def run_script_22(): run("script_22")
+def run_script_23(): run("script_23")
+def run_script_24(): run("script_24")
+def run_script_25(): run("script_25")
+def run_script_26(): run("script_26")
+def run_script_27(): run("script_27")
+def run_script_28(): run("script_28")
+def run_script_29(): run("script_29")
+def run_script_30(): run("script_30")
+def run_script_31(): run("script_31")
+def run_script_32(): run("script_32")
+def run_script_33(): run("script_33")
+def run_script_34(): run("script_34")
+def run_script_35(): run("script_35")
+def run_script_36(): run("script_36")
+def run_script_37(): run("script_37")
+def run_script_38(): run("script_38")
+def run_script_39(): run("script_39")
