@@ -196,10 +196,11 @@ def show_settings_ui(parent_window):
     ctk.CTkLabel(frame,
                  text="  ● 断网：\n"
                       "  - 按一下是断网，再按一下是恢复\n"
+                      "  - 关闭宏会自动恢复网络\n"                      
                      "\n"                       
                       "  ● 步骤：\n"
-                      "  - 卡085，自动流程：断网→检测黑屏→杀游戏→删规则→替换pc_settings\n"
-                      "  - 卡085，使用断开服务器链接\n"
+                      "  - 自动卡085，自动流程：断网→检测黑屏→杀游戏→删规则→替换pc_settings\n"
+                      "  - 使用前必须清洗pc_settings.bin\n"
                       "  - 快到结算位置了再按\n"
                       "  - 检测到黑屏会自动处理，无需手动操作\n"
                      
@@ -726,8 +727,8 @@ def main():
             while True:
                 if is_black_screen():
                     black_count += 1
-                    if black_count >= 5:
-                        print("检测到黑屏持续5秒，杀死游戏")
+                    if black_count >= 10:
+                        print("检测到黑屏持续10秒，杀死游戏")
                         if _overlay:
                             _overlay.update(f"{text},检测到黑屏，杀死游戏")
 
@@ -736,18 +737,19 @@ def main():
                         kill_process_by_name("Launcher.exe")
                         recover_natdown()
 
-                        wait_time = time.time()
+
                         if _overlay:
-                            _overlay.update(f"{text},等待：{int(10-(time.time() - wait_time))}秒")
+                            _overlay.update(f"{text},等待10秒后替换文件")
                         time.sleep(10)
                         restore_pc_settings_bin()
                         if _overlay:
                             _overlay.destroy()
+
                         break
                 else:
                     black_count = 0
                 if _overlay:
-                    _overlay.update(f"{text},检测黑屏中...")
+                    _overlay.update(f"{text},检测黑屏持续10秒，杀死游戏")
                 time.sleep(1)
 
         elif time_limited:
